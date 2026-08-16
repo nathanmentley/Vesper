@@ -13,35 +13,29 @@
 # You should have received a copy of the GNU General Public License
 # along with PiPod.  If not, see <https://gnu.org>.
 
-project(
-  'pipod',
-  ['vala', 'c'],
-  version: '0.1.0',
-  license: 'GPL-3.0-or-later',
-  meson_version: '>= 1.11.0',
-  default_options: [
-    'buildtype=debug',
-    'warning_level=1'
-  ]
+gstreamer_plugin_sources = [
+  'src/gstreamer.vala',
+]
+
+gstreamer_pipod_plugin = library(
+  'pipod-gstreamer-plugin',
+  gstreamer_plugin_sources,
+  dependencies: [
+    glib_dep,
+    gobject_dep,
+    libpeas_dep,
+    pipod_plugin_dep,
+    gst_dep,
+  ],
+  vala_header: 'pipod-gstreamer-plugin.h',
+  vala_vapi: 'pipod-gstreamer-plugin.vapi',
+  install_vala_header: true,
+  install_vala_vapi: true,
+  install: true,
 )
 
-gnome = import('gnome')
-
-# Dependencies
-gee_dep = dependency('gee-0.8')
-glib_dep = dependency('glib-2.0')
-gobject_dep = dependency('gobject-2.0')
-libpeas_dep = dependency('libpeas-2')
-
-gtk_dep = dependency('gtk4')
-libadwaita_dep = dependency('libadwaita-1')
-
-gst_dep = dependency('gstreamer-1.0')
-libsoup_dep = dependency('libsoup-3.0')
-
-gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
-xml_dep = dependency('libxml-2.0')
-
-subdir('core')
-subdir('app')
-subdir('plugins')
+configure_file(
+  input: 'gstreamer.plugin',
+  output: 'gstreamer.plugin',
+  copy: true
+)

@@ -13,35 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with PiPod.  If not, see <https://gnu.org>.
 
-project(
-  'pipod',
-  ['vala', 'c'],
-  version: '0.1.0',
-  license: 'GPL-3.0-or-later',
-  meson_version: '>= 1.11.0',
-  default_options: [
-    'buildtype=debug',
-    'warning_level=1'
-  ]
-)
-
-gnome = import('gnome')
-
-# Dependencies
-gee_dep = dependency('gee-0.8')
-glib_dep = dependency('glib-2.0')
-gobject_dep = dependency('gobject-2.0')
-libpeas_dep = dependency('libpeas-2')
-
-gtk_dep = dependency('gtk4')
-libadwaita_dep = dependency('libadwaita-1')
-
-gst_dep = dependency('gstreamer-1.0')
-libsoup_dep = dependency('libsoup-3.0')
-
-gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
-xml_dep = dependency('libxml-2.0')
-
-subdir('core')
-subdir('app')
-subdir('plugins')
+subdir('subsonic')
+subdir('gstreamer')
+subdir('filesystem')

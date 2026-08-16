@@ -1,0 +1,5 @@
+[Plugin]
+Module=pipod-subsonic-plugin
+Name=Subsonic
+Description=Subsonic music library
+Loader=C
