@@ -1,0 +1,66 @@
+/*
+ * Copyright (C) 2026 Nathan Mentley <nathanmentley@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://gnu.org>.
+ */
+
+using Gtk;
+
+using PiPod.Clients;
+using PiPod.Models;
+using PiPod.Windows;
+
+namespace PiPod {
+    public class PipodApplication : Gtk.Application {
+        private IConfig config;
+        private IMusicEngine music;
+        private INavidromeClient navidrome;
+
+        private MainWindow? window;
+
+        public PipodApplication (IConfig config, IMusicEngine music, INavidromeClient navidrome) {
+            Object (application_id: "com.poketrirx.pipod", flags: ApplicationFlags.FLAGS_NONE);
+
+            this.config = config;
+            this.music = music;
+            this.navidrome = navidrome;
+        }
+
+        protected override void activate () {
+            if (window == null) {
+                window = new MainWindow (this, config, music, navidrome);
+
+                load_css ();
+            }
+
+            window.present ();
+        }
+
+        private void load_css () {
+            Gtk.CssProvider provider = new Gtk.CssProvider ();
+
+            try {
+                provider.load_from_resource ("/com/pipod/app/styles/pipod.css");
+
+                Gdk.Display display = Gdk.Display.get_default ();
+
+                if (display != null) {
+                    Gtk.StyleContext.add_provider_for_display (display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                }
+            } catch (GLib.Error e) {
+                warning ("Failed to load CSS: %s", e.message);
+            }
+        }
+    }
+}
