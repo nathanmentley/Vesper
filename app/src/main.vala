@@ -19,9 +19,7 @@ using PiPod;
 using PiPod.Core;
 
 int main (string[] args) {
-    IConfig config = IConfig.create ();
-
-    Gtk.Application app = new PipodApplication (config);
+    Gtk.Application app = new PipodApplication ();
     
     return app.run (args);
 }

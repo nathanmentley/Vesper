@@ -19,16 +19,17 @@ using Gtk;
 using Gdk;
 using GLib;
 
-using PiPod.Core;
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
+using PiPod.Core.Settings;
+
 using PiPod.Controllers;
 using PiPod.Models;
 using PiPod.Views;
 
 namespace PiPod.Windows {
     public class MainWindow : Adw.ApplicationWindow {
-        private IConfig config;
+        private SettingsEngine settings;
 
         private BrowserController browser_controller;
         private NowPlayingController now_playing_controller;
@@ -56,7 +57,7 @@ namespace PiPod.Windows {
          */
         private Gtk.Box player_box;
 
-        public MainWindow (Adw.Application app, IConfig config) {
+        public MainWindow (Adw.Application app, SettingsEngine settings) {
             Object (
                 application: app,
                 title: "PiPod",
@@ -64,7 +65,7 @@ namespace PiPod.Windows {
                 default_height: 640
             );
 
-            this.config = config;
+            this.settings = settings;
 
             this.playlist = new PlayQueue ();
 
@@ -74,44 +75,22 @@ namespace PiPod.Windows {
              * ---------------------------------------------------------
              */
 
-            PluginManager plugin_manager = new PluginManager(
-                "/Users/nathan/projects/pipod/build/plugins",
-                config
-            );
+            PluginManager plugin_manager = new PluginManager("/Users/nathan/projects/pipod/build/plugins");
 
+            Gee.List<SettingsProvider> setting_providers = get_plugin_impls (plugin_manager, typeof(SettingsProvider));
             MusicLibrary library = get_first_plugin_impl(plugin_manager, typeof(MusicLibrary));
             PlaylistProvider playlist_provider = get_first_plugin_impl(plugin_manager, typeof(PlaylistProvider));
             MusicEngine music_engine = get_first_plugin_impl(plugin_manager, typeof(MusicEngine));
 
-            this.browser_controller =
-                new BrowserController (
-                    library
-                );
-
-            this.now_playing_controller =
-                new NowPlayingController (
-                    library
-                );
-
-            this.player_controller =
-                new PlayerController (
-                    music_engine
-                );
-
-            this.playlist_controller =
-                new PlaylistController (
-                    playlist,
-                    playlist_provider
-                );
-
-            this.settings_controller =
-                new SettingsController (
-                    config
-                );
+            this.browser_controller = new BrowserController (library);
+            this.now_playing_controller = new NowPlayingController (library);
+            this.player_controller = new PlayerController (music_engine);
+            this.playlist_controller = new PlaylistController (playlist, playlist_provider);
+            this.settings_controller = new SettingsController (settings, setting_providers);
 
             build_ui ();
             connect_signals ();
-            load_config ();
+            connect_to_navidrome ();
         }
 
         private void build_ui () {
@@ -130,31 +109,13 @@ namespace PiPod.Windows {
              * ---------------------------------------------------------
              */
 
-            var now_playing_box =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    0
-                );
+            Gtk.Box now_playing_box = new Gtk.Box (Orientation.VERTICAL, 0);
 
-            now_playing_box.set_margin_top (
-                12
-            );
-
-            now_playing_box.set_margin_bottom (
-                12
-            );
-
-            now_playing_box.set_margin_start (
-                12
-            );
-
-            now_playing_box.set_margin_end (
-                12
-            );
-
-            now_playing_controller.mount (
-                now_playing_box
-            );
+            now_playing_box.set_margin_top (12);
+            now_playing_box.set_margin_bottom (12);
+            now_playing_box.set_margin_start (12);
+            now_playing_box.set_margin_end (12);
+            now_playing_controller.mount (now_playing_box);
 
             view_stack.add_titled_with_icon (
                 now_playing_box,
@@ -169,31 +130,13 @@ namespace PiPod.Windows {
              * ---------------------------------------------------------
              */
 
-            var library_box =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    0
-                );
+            var library_box = new Gtk.Box (Orientation.VERTICAL, 0);
 
-            library_box.set_margin_top (
-                12
-            );
-
-            library_box.set_margin_bottom (
-                12
-            );
-
-            library_box.set_margin_start (
-                12
-            );
-
-            library_box.set_margin_end (
-                12
-            );
-
-            browser_controller.mount (
-                library_box
-            );
+            library_box.set_margin_top (12);
+            library_box.set_margin_bottom (12);
+            library_box.set_margin_start (12);
+            library_box.set_margin_end (12);
+            browser_controller.mount (library_box);
 
             view_stack.add_titled_with_icon (
                 library_box,
@@ -214,25 +157,11 @@ namespace PiPod.Windows {
                     0
                 );
 
-            playlist_box.set_margin_top (
-                12
-            );
-
-            playlist_box.set_margin_bottom (
-                12
-            );
-
-            playlist_box.set_margin_start (
-                12
-            );
-
-            playlist_box.set_margin_end (
-                12
-            );
-
-            playlist_controller.mount (
-                playlist_box
-            );
+            playlist_box.set_margin_top (12);
+            playlist_box.set_margin_bottom (12);
+            playlist_box.set_margin_start (12);
+            playlist_box.set_margin_end (12);
+            playlist_controller.mount (playlist_box);
 
             view_stack.add_titled_with_icon (
                 playlist_box,
@@ -249,44 +178,18 @@ namespace PiPod.Windows {
              * Keep Settings constrained on large displays.
              */
 
-            var settings_box =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    0
-                );
+            Gtk.Box settings_box = new Gtk.Box (Orientation.VERTICAL, 0);
 
-            settings_box.set_margin_top (
-                12
-            );
+            settings_box.set_margin_top (12);
+            settings_box.set_margin_bottom (12);
+            settings_box.set_margin_start (12);
+            settings_box.set_margin_end (12);
+            settings_controller.mount (settings_box);
 
-            settings_box.set_margin_bottom (
-                12
-            );
-
-            settings_box.set_margin_start (
-                12
-            );
-
-            settings_box.set_margin_end (
-                12
-            );
-
-            settings_controller.mount (
-                settings_box
-            );
-
-            var settings_clamp =
-                new Adw.Clamp ();
-
-            settings_clamp.maximum_size =
-                600;
-
-            settings_clamp.tightening_threshold =
-                400;
-
-            settings_clamp.set_child (
-                settings_box
-            );
+            Adw.Clamp settings_clamp = new Adw.Clamp ();
+            settings_clamp.maximum_size = 600;
+            settings_clamp.tightening_threshold = 400;
+            settings_clamp.set_child (settings_box);
 
             view_stack.add_titled_with_icon (
                 settings_clamp,
@@ -301,14 +204,9 @@ namespace PiPod.Windows {
              * ---------------------------------------------------------
              */
 
-            view_switcher =
-                new Adw.ViewSwitcher ();
-
-            view_switcher.stack =
-                view_stack;
-
-            view_switcher.policy =
-                Adw.ViewSwitcherPolicy.WIDE;
+            view_switcher = new Adw.ViewSwitcher ();
+            view_switcher.stack = view_stack;
+            view_switcher.policy = Adw.ViewSwitcherPolicy.WIDE;
 
             /*
              * ---------------------------------------------------------
@@ -316,14 +214,9 @@ namespace PiPod.Windows {
              * ---------------------------------------------------------
              */
 
-            view_switcher_bar =
-                new Adw.ViewSwitcherBar ();
-
-            view_switcher_bar.stack =
-                view_stack;
-
-            view_switcher_bar.reveal =
-                false;
+            view_switcher_bar = new Adw.ViewSwitcherBar ();
+            view_switcher_bar.stack = view_stack;
+            view_switcher_bar.reveal = false;
 
             /*
              * ---------------------------------------------------------
@@ -331,12 +224,8 @@ namespace PiPod.Windows {
              * ---------------------------------------------------------
              */
 
-            var header_bar =
-                new Adw.HeaderBar ();
-
-            header_bar.set_title_widget (
-                view_switcher
-            );
+            Adw.HeaderBar header_bar = new Adw.HeaderBar ();
+            header_bar.set_title_widget (view_switcher);
 
             /*
              * ---------------------------------------------------------
@@ -686,36 +575,8 @@ namespace PiPod.Windows {
          * Navidrome Connection
          * -------------------------------------------------------------
          */
-
         private void connect_to_navidrome () {
-            /*
-             * Missing configuration is not an application-wide
-             * notification. The Settings view is the appropriate place
-             * to eventually display this inline.
-             */
-
-            if (
-                config.base_url.length == 0 ||
-                config.user.length == 0
-            ) {
-                show_error (
-                    "Enter server URL and username"
-                );
-
-                return;
-            }
-
             try {
-                config.save_config ();
-
-                /*
-                 * No "Connecting..." toast.
-                 *
-                 * No "Connected!" toast.
-                 *
-                 * The library populating itself provides the feedback.
-                 */
-
                 browser_controller.load_artists ();
 
                 playlist_controller.load_playlists.begin ();
@@ -743,30 +604,12 @@ namespace PiPod.Windows {
             return false;
         }
 
-        /*
-         * -------------------------------------------------------------
-         * Configuration
-         * -------------------------------------------------------------
-         */
-
-        private void load_config () {
-            if (!config.load_config ()) {
-                return;
-            }
-
-            Idle.add (() => {
-                connect_to_navidrome ();
-
-                return false;
-            });
-        }
-
         private T get_first_plugin_impl<T> (
             PluginManager plugin_manager,
             GLib.Type type
         ) {
             Gee.List<GLib.Object> extensions =
-                plugin_manager.get_extensions (type);
+                plugin_manager.get_extensions (settings, type);
 
             foreach (var extension in extensions) {
                 if (extension.get_type ().is_a (type)) {
@@ -778,6 +621,24 @@ namespace PiPod.Windows {
                 "No implementation found for %s",
                 type.name ()
             );
+        }
+
+        private Gee.List<T> get_plugin_impls<T> (
+            PluginManager plugin_manager,
+            GLib.Type type
+        ) {
+            Gee.List<T> result = new Gee.ArrayList<T> ();
+
+            Gee.List<GLib.Object> extensions =
+                plugin_manager.get_extensions (settings, type);
+
+            foreach (var extension in extensions) {
+                if (extension.get_type ().is_a (type)) {
+                    result.add((T) extension);
+                }
+            }
+
+            return result;
         }
     }
 }

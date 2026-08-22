@@ -7,10 +7,12 @@
  * (at your option) any later version.
  */
 
-using PiPod.Core.Settings;
+using PiPod.Core.Models;
 
-namespace PiPod.Core.Plugins {
-    public interface ConfigurablePlugin : Plugin, Object {
-        public abstract void configure (SettingsEngine settings);
+namespace PiPod.Core.Settings {
+    public enum SettingType {
+        STRING,
+        PASSWORD,
+        DIRECTORY
     }
 }

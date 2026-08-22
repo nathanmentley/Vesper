@@ -15,7 +15,7 @@ namespace PiPod.Core.Plugins {
         FINISHED
     }
 
-    public interface MusicEngine : Object {
+    public interface MusicEngine : Plugin, Object {
         public abstract void set_source (string uri);
 
         public abstract bool has_player ();

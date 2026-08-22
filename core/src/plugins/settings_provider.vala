@@ -7,9 +7,10 @@
  * (at your option) any later version.
  */
 
-using PiPod.Core.Models;
+using PiPod.Core.Settings;
 
 namespace PiPod.Core.Plugins {
-    public interface SettingsProvider : Object {
+    public interface SettingsProvider : Plugin {
+        public abstract Gee.List<SettingDefinition> get_setting_definitions ();
     }
 }

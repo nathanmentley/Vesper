@@ -17,25 +17,24 @@
 
 using Gtk;
 
-using PiPod.Core;
 using PiPod.Core.Models;
+using PiPod.Core.Plugins;
+using PiPod.Core.Settings;
 using PiPod.Windows;
 
 namespace PiPod {
     public class PipodApplication : Adw.Application {
-        private IConfig config;
-
         private MainWindow? window;
 
-        public PipodApplication (IConfig config) {
+        public PipodApplication () {
             Object (application_id: "com.poketrirx.pipod", flags: ApplicationFlags.FLAGS_NONE);
-
-            this.config = config;
         }
 
         protected override void activate () {
+            SettingsEngine settings = new SettingsEngineImpl("pipod-config.ini");
+
             if (window == null) {
-                window = new MainWindow (this, config);
+                window = new MainWindow (this, settings);
 
                 load_css ();
             }

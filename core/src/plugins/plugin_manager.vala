@@ -12,16 +12,13 @@ using GLib;
 using Peas;
 using Gee;
 
-using PiPod.Core;
+using PiPod.Core.Settings;
 
 namespace PiPod.Core.Plugins {
     public class PluginManager : Object {
         private Peas.Engine engine;
-        private IConfig config;
 
-        public PluginManager (string plugin_dir, IConfig config) {
-            this.config = config;
-
+        public PluginManager (string plugin_dir) {
             this.engine = new Peas.Engine ();
 
             engine.add_search_path (plugin_dir, plugin_dir);
@@ -38,7 +35,7 @@ namespace PiPod.Core.Plugins {
          * get_extensions (typeof (MusicLibrary))
          * get_extensions (typeof (PlaylistProvider))
          */
-        public Gee.List<GLib.Object> get_extensions (GLib.Type extension_type) {
+        public Gee.List<GLib.Object> get_extensions (SettingsEngine settings, GLib.Type extension_type) {
             var extensions = new Gee.ArrayList<GLib.Object> ();
         
             uint count = engine.get_n_items ();
@@ -109,7 +106,7 @@ namespace PiPod.Core.Plugins {
                 var configurable = extension as ConfigurablePlugin;
         
                 if (configurable != null) {
-                    configurable.configure (config);
+                    configurable.configure (settings);
                 }
         
                 extensions.add (extension);

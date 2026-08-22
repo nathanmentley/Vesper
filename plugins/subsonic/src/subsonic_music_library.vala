@@ -7,27 +7,121 @@
  * (at your option) any later version.
  */
 
-using PiPod.Core;
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
-using PiPod.Core.Plugins;
+using PiPod.Core.Settings;
 
 using PiPod.Plugins.Subsonic;
 
 namespace PiPod.Plugins.Subsonic {
-    public sealed class SubsonicMusicLibrary : MusicLibrary, PlaylistProvider, ConfigurablePlugin, SettingsProvider, Object {
+    public sealed class SubsonicConfig : IConfig, Object {
+        private SettingsEngine settings_engine;
+
+        private SettingDefinition base_url_settings_def;
+        private SettingDefinition user_settings_def;
+        private SettingDefinition pass_settings_def;
+
+        public string? base_url {
+            owned get {
+                return settings_engine.get_string(base_url_settings_def);
+            }
+        }
+        public string? user {
+            owned get {
+                return settings_engine.get_string(user_settings_def);
+            }
+        }
+        public string? pass {
+            owned get {
+                return settings_engine.get_string(pass_settings_def);
+            }
+        }
+
+        public SubsonicConfig(
+            SettingsEngine settings_engine,
+            SettingDefinition base_url_settings_def,
+            SettingDefinition user_settings_def,
+            SettingDefinition pass_settings_def
+        ) {
+            this.settings_engine = settings_engine;
+
+            this.base_url_settings_def = base_url_settings_def;
+            this.user_settings_def = user_settings_def;
+            this.pass_settings_def = pass_settings_def;
+        }
+    }
+
+    public sealed class SubsonicMusicLibrary :
+        PiPod.Core.Plugins.Plugin,
+        ConfigurablePlugin,
+        MusicLibrary,
+        PlaylistProvider,
+        SettingsProvider,
+        Object
+    {
+        public string id { get { return "subsonic-1"; } }
+
+        public string source { get { return "Subsonic"; } }
+
         private sealed ISubsonicClient client;
 
-        public string id { get; default = "id"; }
-
-        public string source { get; default = "Subsonic"; }
+        private SettingDefinition base_url_settings_def;
+        private SettingDefinition user_settings_def;
+        private SettingDefinition pass_settings_def;
 
         public SubsonicMusicLibrary () {
             Object ();
         }
 
-        public void configure (IConfig config) {
+        public void configure (SettingsEngine settings) {
+            base_url_settings_def =
+                new SettingDefinition (
+                    id,
+                    "server-url",
+                    "Server URL",
+                    "Subsonic server URL",
+                    SettingType.STRING
+                );
+
+            user_settings_def = 
+                new SettingDefinition (
+                    id,
+                    "username",
+                    "Username",
+                    "Subsonic username",
+                    SettingType.STRING
+                );
+
+            pass_settings_def = 
+                new SettingDefinition (
+                    id,
+                    "password",
+                    "Password",
+                    "Subsonic password",
+                    SettingType.PASSWORD
+                );
+
+            IConfig config = new SubsonicConfig(
+                settings,
+                base_url_settings_def,
+                user_settings_def,
+                pass_settings_def
+            );
+
             this.client = ISubsonicClient.create (config);
+        }
+
+        public Gee.List<SettingDefinition> get_setting_definitions () {
+            var settings =
+                new Gee.ArrayList<SettingDefinition> ();
+
+            settings.add (base_url_settings_def);
+
+            settings.add (user_settings_def);
+
+            settings.add (pass_settings_def);
+
+            return settings;
         }
 
         public async Gee.List<Artist> get_artists () {
@@ -74,4 +168,5 @@ public void peas_register_types (TypeModule module) {
 
     object_module.register_extension_type (typeof (MusicLibrary), typeof (SubsonicMusicLibrary));
     object_module.register_extension_type (typeof (PlaylistProvider), typeof (SubsonicMusicLibrary));
+    object_module.register_extension_type (typeof (SettingsProvider), typeof (SubsonicMusicLibrary));
 }

@@ -18,29 +18,34 @@
 using Gtk;
 using Adw;
 
-using PiPod.Core;
 using PiPod.Core.Models;
+using PiPod.Core.Plugins;
+using PiPod.Core.Settings;
 using PiPod.Core.Utils;
 
 namespace PiPod.Views {
     public class SettingsView : BaseView {
         public signal void connection_requested ();
 
-        private EntryRow server_entry;
-        private EntryRow user_entry;
-        private PasswordEntryRow pass_entry;
-
         private Button connect_button;
 
-        private IConfig config;
+        private Gee.List<SettingsProvider> setting_providers;
 
-        public SettingsView (IConfig config) {
+        private Gee.HashMap<string, Adw.EntryRow> setting_rows;
+
+        public SettingsView (
+            Gee.List<SettingsProvider> setting_providers
+        ) {
             Object (
                 orientation: Orientation.VERTICAL,
                 spacing: 0
             );
 
-            this.config = config;
+            this.setting_providers =
+                setting_providers;
+
+            this.setting_rows =
+                new Gee.HashMap<string, Adw.EntryRow> ();
 
             build_ui ();
             connect_signals ();
@@ -64,89 +69,29 @@ namespace PiPod.Views {
 
             /*
              * ---------------------------------------------------------
-             * Navidrome preferences
+             * Settings providers
              * ---------------------------------------------------------
              */
 
-            var navidrome_group =
-                new Adw.PreferencesGroup ();
+            foreach (var provider in setting_providers) {
+                var group =
+                    create_provider_group (
+                        provider
+                    );
 
-            navidrome_group.title =
-                "Navidrome";
-
-            navidrome_group.description =
-                "Connect PiPod to your Navidrome server.";
-
-            /*
-             * ---------------------------------------------------------
-             * Server URL
-             * ---------------------------------------------------------
-             */
-
-            server_entry =
-                new Adw.EntryRow ();
-
-            server_entry.title =
-                "Server URL";
-
-            server_entry.input_purpose =
-                InputPurpose.URL;
-
-            navidrome_group.add (
-                server_entry
-            );
-
-            /*
-             * ---------------------------------------------------------
-             * Username
-             * ---------------------------------------------------------
-             */
-
-            user_entry =
-                new Adw.EntryRow ();
-
-            user_entry.title =
-                "Username";
-
-            user_entry.input_purpose =
-                InputPurpose.FREE_FORM;
-
-            navidrome_group.add (
-                user_entry
-            );
-
-            /*
-             * ---------------------------------------------------------
-             * Password
-             * ---------------------------------------------------------
-             */
-
-            pass_entry =
-                new Adw.PasswordEntryRow ();
-
-            pass_entry.title =
-                "Password";
-
-            navidrome_group.add (
-                pass_entry
-            );
-
-            content.append (
-                navidrome_group
-            );
+                content.append (
+                    group
+                );
+            }
 
             /*
              * ---------------------------------------------------------
              * Connect button
              * ---------------------------------------------------------
              *
-             * This deliberately lives outside the PreferencesGroup.
-             *
-             * The fields are settings.
-             * The button is an action.
-             *
-             * Keeping those concepts visually separate makes the
-             * interface feel much less like a pile of form controls.
+             * Settings are displayed above.
+             * Connecting is an action, so it deliberately lives
+             * outside the PreferencesGroups.
              */
 
             var button_box =
@@ -199,46 +144,250 @@ namespace PiPod.Views {
             );
         }
 
-        private void connect_signals () {
+        private Adw.PreferencesGroup create_provider_group (
+            SettingsProvider provider
+        ) {
+            var group =
+                new Adw.PreferencesGroup ();
+
+            group.title =
+                provider.source;
+
+            foreach (
+                var definition
+                in provider.get_setting_definitions ()
+            ) {
+                var row =
+                    create_setting_row (
+                        provider,
+                        definition
+                    );
+
+                if (row != null) {
+                    group.add (
+                        row
+                    );
+                }
+            }
+
+            return group;
+        }
+
+        private Adw.PreferencesRow? create_setting_row (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
+            switch (definition.setting_type) {
+                case SettingType.STRING:
+                    return create_string_row (
+                        provider,
+                        definition
+                    );
+
+                case SettingType.PASSWORD:
+                    return create_password_row (
+                        provider,
+                        definition
+                    );
+
+                case SettingType.DIRECTORY:
+                    return create_directory_row (
+                        provider,
+                        definition
+                    );
+
+                default:
+                    warning (
+                        "Unknown setting type for '%s'",
+                        definition.key
+                    );
+
+                    return null;
+            }
+        }
+
+        private Adw.EntryRow create_string_row (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
+            var row =
+                new Adw.EntryRow ();
+
+            row.title =
+                definition.name;
+
+            if (definition.description != "") {
+                row.tooltip_text =
+                    definition.description;
+            }
+
+            register_setting_row (
+                provider,
+                definition,
+                row
+            );
+
+            return row;
+        }
+
+        private Adw.PasswordEntryRow create_password_row (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
+            var row =
+                new Adw.PasswordEntryRow ();
+
+            row.title =
+                definition.name;
+
+            if (definition.description != "") {
+                row.tooltip_text =
+                    definition.description;
+            }
+
+            register_setting_row (
+                provider,
+                definition,
+                row
+            );
+
+            return row;
+        }
+
+        private Adw.EntryRow create_directory_row (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
             /*
-             * ---------------------------------------------------------
-             * Connect
-             * ---------------------------------------------------------
+             * For now DIRECTORY behaves like a string.
+             *
+             * This can later become an Adw.ActionRow with a
+             * Gtk.FileDialog folder picker.
              */
 
+            var row =
+                new Adw.EntryRow ();
+
+            row.title =
+                definition.name;
+
+            if (definition.description != "") {
+                row.tooltip_text =
+                    definition.description;
+            }
+
+            register_setting_row (
+                provider,
+                definition,
+                row
+            );
+
+            return row;
+        }
+
+        private void register_setting_row (
+            SettingsProvider provider,
+            SettingDefinition definition,
+            Adw.EntryRow row
+        ) {
+            setting_rows.set (
+                get_setting_id (
+                    provider,
+                    definition
+                ),
+                row
+            );
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Public setting access
+         * -------------------------------------------------------------
+         */
+
+        public string? get_setting_value (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
+            var row =
+                get_setting_row (
+                    provider,
+                    definition
+                );
+
+            if (row == null) {
+                return null;
+            }
+
+            return row.text;
+        }
+
+        public void set_setting_value (
+            SettingsProvider provider,
+            SettingDefinition definition,
+            string? value
+        ) {
+            var row =
+                get_setting_row (
+                    provider,
+                    definition
+                );
+
+            if (row == null) {
+                return;
+            }
+
+            row.text =
+                value ?? "";
+        }
+
+        private Adw.EntryRow? get_setting_row (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
+            return setting_rows.get (
+                get_setting_id (
+                    provider,
+                    definition
+                )
+            );
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Setting identity
+         * -------------------------------------------------------------
+         *
+         * Setting keys are only unique within a plugin.
+         *
+         * For example:
+         *
+         *     navidrome/server_url
+         *     jellyfin/server_url
+         *
+         * are different settings.
+         */
+
+        private string get_setting_id (
+            SettingsProvider provider,
+            SettingDefinition definition
+        ) {
+            return "%s/%s".printf (
+                provider.id,
+                definition.key
+            );
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Signals
+         * -------------------------------------------------------------
+         */
+
+        private void connect_signals () {
             connect_button.clicked.connect (() => {
                 connection_requested ();
             });
-
-            /*
-             * ---------------------------------------------------------
-             * Configuration bindings
-             * ---------------------------------------------------------
-             */
-
-            config.bind_property (
-                "base_url",
-                server_entry,
-                "text",
-                GLib.BindingFlags.BIDIRECTIONAL |
-                GLib.BindingFlags.SYNC_CREATE
-            );
-
-            config.bind_property (
-                "user",
-                user_entry,
-                "text",
-                GLib.BindingFlags.BIDIRECTIONAL |
-                GLib.BindingFlags.SYNC_CREATE
-            );
-
-            config.bind_property (
-                "pass",
-                pass_entry,
-                "text",
-                GLib.BindingFlags.BIDIRECTIONAL |
-                GLib.BindingFlags.SYNC_CREATE
-            );
         }
     }
 }

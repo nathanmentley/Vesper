@@ -17,19 +17,100 @@
 
 using GLib;
 
-using PiPod.Core;
+using PiPod.Core.Plugins;
+using PiPod.Core.Settings;
+
 using PiPod.Views;
 
 namespace PiPod.Controllers {
     public class SettingsController : BaseController<SettingsView> {
         public signal void connection_requested ();
 
-        public SettingsController (IConfig config) {
-            base(new SettingsView(config));
+        private SettingsEngine settings_engine;
+
+        private Gee.List<SettingsProvider> setting_providers;
+
+        public SettingsController (
+            SettingsEngine settings_engine,
+            Gee.List<SettingsProvider> setting_providers
+        ) {
+            base (
+                new SettingsView (
+                    setting_providers
+                )
+            );
+
+            this.settings_engine =
+                settings_engine;
+
+            this.setting_providers =
+                setting_providers;
+
+            load_settings ();
         }
 
         protected override void connect_view () {
-            view.connection_requested.connect (() => connection_requested ());
+            view.connection_requested.connect (() => {
+                save_settings ();
+
+                connection_requested ();
+            });
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Load
+         * -------------------------------------------------------------
+         */
+
+        private void load_settings () {
+            foreach (var provider in setting_providers) {
+                var definitions =
+                    provider.get_setting_definitions ();
+
+                foreach (var definition in definitions) {
+                    var value =
+                        settings_engine.get_string (
+                            definition
+                        );
+
+                    view.set_setting_value (
+                        provider,
+                        definition,
+                        value
+                    );
+                }
+            }
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Save
+         * -------------------------------------------------------------
+         */
+
+        private void save_settings () {
+            foreach (var provider in setting_providers) {
+                var definitions =
+                    provider.get_setting_definitions ();
+
+                foreach (var definition in definitions) {
+                    var value =
+                        view.get_setting_value (
+                            provider,
+                            definition
+                        );
+
+                    if (value == null) {
+                        continue;
+                    }
+
+                    settings_engine.set_string (
+                        definition,
+                        value
+                    );
+                }
+            }
         }
     }
 }

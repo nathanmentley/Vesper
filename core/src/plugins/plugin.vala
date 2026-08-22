@@ -7,10 +7,13 @@
  * (at your option) any later version.
  */
 
-using PiPod.Core.Settings;
+using Gee;
+using PiPod.Core.Models;
 
 namespace PiPod.Core.Plugins {
-    public interface ConfigurablePlugin : Plugin, Object {
-        public abstract void configure (SettingsEngine settings);
+    public interface Plugin : Object {
+        public abstract string id { get; }
+
+        public abstract string source { get; }
     }
 }

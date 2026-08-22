@@ -11,7 +11,7 @@ using Gee;
 using PiPod.Core.Models;
 
 namespace PiPod.Core.Plugins {
-    public interface PlaylistProvider : Object {
+    public interface PlaylistProvider : Plugin, Object {
         public abstract async Gee.List<Playlist> get_playlists ();
 
         public abstract async Gee.List<Song> get_playlist_songs (string playlist_id);

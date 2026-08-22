@@ -24,6 +24,12 @@ using PiPod.Core;
 using PiPod.Core.Models;
 
 namespace PiPod.Plugins.Subsonic {
+    public interface IConfig : Object {
+        public abstract string? base_url { owned get; }
+        public abstract string? user { owned get; }
+        public abstract string? pass { owned get; }
+    }
+
     public interface ISubsonicClient : Object {
         public abstract async Gee.List<Artist> get_artists ();
 

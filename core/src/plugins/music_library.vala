@@ -11,11 +11,7 @@ using Gee;
 using PiPod.Core.Models;
 
 namespace PiPod.Core.Plugins {
-    public interface MusicLibrary : Object {
-        public abstract string id { get; }
-
-        public abstract string source { get; }
-
+    public interface MusicLibrary : Plugin, Object {
         public abstract async Gee.List<Artist> get_artists ();
 
         public abstract async Gee.List<Album> get_albums (string artist_id);

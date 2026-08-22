@@ -14,21 +14,24 @@
 # along with PiPod.  If not, see <https://gnu.org>.
 
 plugin_sources = [
-  'src/plugins/configurable_plugin.vala',
-  'src/plugins/music_engine.vala',
-  'src/plugins/music_library.vala',
-  'src/plugins/playlist_provider.vala',
-  'src/plugins/plugin_manager.vala',
-  'src/plugins/settings_provider.vala',
-
   'src/models/album.vala',
   'src/models/artist.vala',
   'src/models/playlist.vala',
   'src/models/song.vala',
 
-  'src/utils/string_utils.vala',
+  'src/plugins/configurable_plugin.vala',
+  'src/plugins/music_engine.vala',
+  'src/plugins/music_library.vala',
+  'src/plugins/playlist_provider.vala',
+  'src/plugins/plugin_manager.vala',
+  'src/plugins/plugin.vala',
+  'src/plugins/settings_provider.vala',
 
-  'src/config.vala',
+  'src/settings/setting_type.vala',
+  'src/settings/settings_definition.vala',
+  'src/settings/settings_engine.vala',
+
+  'src/utils/string_utils.vala',
 ]
 
 pipod_plugin = library(

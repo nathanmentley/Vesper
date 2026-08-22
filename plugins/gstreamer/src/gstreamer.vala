@@ -10,13 +10,15 @@
 using GLib;
 using Gst;
 
-using PiPod.Core;
 using PiPod.Core.Plugins;
+using PiPod.Core.Settings;
 
 namespace PiPod.Plugins.GStreamer {
     public sealed class GStreamerMusicEngine :
         GLib.Object,
+        PiPod.Core.Plugins.Plugin,
         MusicEngine,
+        SettingsProvider,
         ConfigurablePlugin {
 
         private Gst.Element? player = null;
@@ -29,10 +31,32 @@ namespace PiPod.Plugins.GStreamer {
 
         private uint position_timer = 0;
 
+        public string id { get { return "gstreamer-1"; } }
+
+        public string source { get { return "Gstreamer"; } }
+
         public GStreamerMusicEngine () {
         }
 
-        public void configure (IConfig config) {
+
+        public Gee.List<SettingDefinition> get_setting_definitions () {
+            var settings =
+                new Gee.ArrayList<SettingDefinition> ();
+
+            settings.add (
+                new SettingDefinition (
+                    id,
+                    "server-url",
+                    "GStreamer Setting",
+                    "GStreamer Setting that is a noop",
+                    SettingType.STRING
+                )
+            );
+
+            return settings;
+        }
+
+        public void configure (SettingsEngine settings) {
             // GStreamer is initialized once when the plugin
             // module is registered.
         }
@@ -452,4 +476,6 @@ public void peas_register_types (
             PiPod.Plugins.GStreamer.GStreamerMusicEngine
         )
     );
+
+    object_module.register_extension_type (typeof (SettingsProvider), typeof (PiPod.Plugins.GStreamer.GStreamerMusicEngine));
 }
