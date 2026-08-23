@@ -20,7 +20,7 @@ using Adw;
 
 using PiPod.Core.Models;
 
-namespace PiPod.Components {
+namespace PiPod.App.Components {
     public class PlaylistEntry : Adw.ActionRow {
         public signal void selected (int index);
         public signal void move_up_request (int index);
@@ -29,28 +29,26 @@ namespace PiPod.Components {
 
         private Song song;
         private int index;
+        private bool is_current;
+        private int playlist_length;
 
         private Button up_button;
         private Button down_button;
         private Button delete_button;
 
-        public PlaylistEntry (
-            Song song,
-            int index,
-            bool is_current,
-            int playlist_length
-        ) {
+        public PlaylistEntry (Song song, int index, bool is_current, int playlist_length) {
             Object ();
 
             this.song = song;
             this.index = index;
+            this.is_current = is_current;
+            this.playlist_length = playlist_length;
 
-            /*
-             * ---------------------------------------------------------
-             * Song information
-             * ---------------------------------------------------------
-             */
+            build_ui ();
+            connect_signals ();
+        }
 
+        private void build_ui () {
             title = song.title;
             title_lines = 1;
 
@@ -59,45 +57,16 @@ namespace PiPod.Components {
                 subtitle_lines = 1;
             }
 
-            /*
-             * ---------------------------------------------------------
-             * Current song indicator
-             * ---------------------------------------------------------
-             */
-
             if (is_current) {
                 add_css_class ("accent");
 
-                var playing_icon =
-                    new Image.from_icon_name (
-                        "media-playback-start-symbolic"
-                    );
-
-                playing_icon.tooltip_text =
-                    "Currently playing";
+                Image playing_icon = new Image.from_icon_name ("media-playback-start-symbolic");
+                playing_icon.tooltip_text = "Currently playing";
 
                 add_prefix (playing_icon);
             }
 
-            /*
-             * ---------------------------------------------------------
-             * Selecting the song
-             * ---------------------------------------------------------
-             *
-             * The entire row is the selection target.
-             */
-
             activatable = true;
-
-            activated.connect (() => {
-                selected (this.index);
-            });
-
-            /*
-             * ---------------------------------------------------------
-             * Move up
-             * ---------------------------------------------------------
-             */
 
             up_button = new Button ();
 
@@ -108,18 +77,6 @@ namespace PiPod.Components {
 
             up_button.sensitive = index > 0;
 
-            up_button.clicked.connect (() => {
-                move_up_request (this.index);
-            });
-
-            add_suffix (up_button);
-
-            /*
-             * ---------------------------------------------------------
-             * Move down
-             * ---------------------------------------------------------
-             */
-
             down_button = new Button ();
 
             down_button.icon_name = "go-down-symbolic";
@@ -127,39 +84,27 @@ namespace PiPod.Components {
 
             down_button.add_css_class ("flat");
 
-            down_button.sensitive =
-                index < playlist_length - 1;
-
-            down_button.clicked.connect (() => {
-                move_down_request (this.index);
-            });
-
-            add_suffix (down_button);
-
-            /*
-             * ---------------------------------------------------------
-             * Delete
-             * ---------------------------------------------------------
-             */
+            down_button.sensitive = index < playlist_length - 1;
 
             delete_button = new Button ();
 
-            delete_button.icon_name =
-                "user-trash-symbolic";
+            delete_button.icon_name = "user-trash-symbolic";
 
-            delete_button.tooltip_text =
-                "Remove from playlist";
+            delete_button.tooltip_text = "Remove from playlist";
 
             delete_button.add_css_class ("flat");
-            delete_button.add_css_class (
-                "destructive-action"
-            );
+            delete_button.add_css_class ("destructive-action");
 
-            delete_button.clicked.connect (() => {
-                delete_request (this.index);
-            });
-
+            add_suffix (up_button);
+            add_suffix (down_button);
             add_suffix (delete_button);
+        }
+
+        private void connect_signals () {
+            activated.connect (() => selected (this.index));
+            up_button.clicked.connect (() => move_up_request (this.index));
+            down_button.clicked.connect (() => move_down_request (this.index));
+            delete_button.clicked.connect (() => delete_request (this.index));
         }
     }
 }

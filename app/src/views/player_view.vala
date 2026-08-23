@@ -17,10 +17,11 @@
 
 using Gtk;
 
-using PiPod.Core.Utils;
 using PiPod.Core.Models;
 
-namespace PiPod.Views {
+using PiPod.App.Utils;
+
+namespace PiPod.App.Views {
     public class PlayerView : BaseView {
         /*
          * -------------------------------------------------------------

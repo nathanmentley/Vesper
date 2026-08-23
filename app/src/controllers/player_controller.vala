@@ -21,9 +21,10 @@ using GLib;
 
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
-using PiPod.Views;
 
-namespace PiPod.Controllers {
+using PiPod.App.Views;
+
+namespace PiPod.App.Controllers {
     public class PlayerController : BaseController<PlayerView> {
         public signal void song_finished ();
         public signal void previous_requested ();
@@ -183,23 +184,17 @@ namespace PiPod.Controllers {
         }
         
         private void toggle_shuffle () {
-            shuffle_enabled =
-                !shuffle_enabled;
+            shuffle_enabled = !shuffle_enabled;
 
-            view.set_shuffle_active (
-                shuffle_enabled
-            );
+            view.set_shuffle_active (shuffle_enabled);
 
             shuffle_requested (shuffle_enabled);
         }
 
         private void toggle_repeat () {
-            repeat_enabled =
-                !repeat_enabled;
+            repeat_enabled = !repeat_enabled;
 
-            view.set_repeat_active (
-                repeat_enabled
-            );
+            view.set_repeat_active (repeat_enabled);
 
             repeat_requested (repeat_enabled);
         }

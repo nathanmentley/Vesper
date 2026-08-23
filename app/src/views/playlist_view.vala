@@ -20,11 +20,12 @@ using Gtk;
 using Adw;
 
 using PiPod.Core.Models;
-using PiPod.Core.Utils;
-using PiPod.Components;
-using PiPod.Models;
 
-namespace PiPod.Views {
+using PiPod.App.Components;
+using PiPod.App.Models;
+using PiPod.App.Utils;
+
+namespace PiPod.App.Views {
     public class PlaylistView : BaseView {
         /*
          * -------------------------------------------------------------

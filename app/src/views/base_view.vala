@@ -17,7 +17,7 @@
 
 using Gtk;
 
-namespace PiPod.Views {
+namespace PiPod.App.Views {
     public abstract class BaseView : Box {
     }
 }

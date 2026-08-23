@@ -16,9 +16,10 @@
  */
 
 using GLib;
-using PiPod.Core.Utils;
 
-namespace PiPod.Tests.Utils {
+using PiPod.App.Utils;
+
+namespace PiPod.App.Tests.Utils {
     void test_format_time_short () {
         string result = StringUtils.format_time(65.0);
         assert(result == "01:05");

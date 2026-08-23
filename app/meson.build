@@ -37,6 +37,9 @@ app_sources = [
   # Models
   'src/models/play_queue.vala',
 
+  # Utils
+  'src/utils/string_utils.vala',
+
   # Views
   'src/views/base_view.vala',
   'src/views/browser_view.vala',
@@ -67,6 +70,8 @@ pipod = executable(
     libsoup_dep,
     gdkpixbuf_dep,
     xml_dep,
+    pipod_service_dep,
+    pipod_data_dep,
     pipod_plugin_dep,
   ],
   install: true,
@@ -92,6 +97,8 @@ pipod_tests = executable(
     libsoup_dep,
     gdkpixbuf_dep,
     xml_dep,
+    pipod_service_dep,
+    pipod_data_dep,
     pipod_plugin_dep,
   ],
   install: false,

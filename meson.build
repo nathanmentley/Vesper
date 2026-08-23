@@ -28,6 +28,10 @@ project(
 gnome = import('gnome')
 
 # Dependencies
+cc = meson.get_compiler('c')
+
+m_dep = cc.find_library('m', required: true)
+
 gee_dep = dependency('gee-0.8')
 glib_dep = dependency('glib-2.0')
 gobject_dep = dependency('gobject-2.0')
@@ -37,11 +41,18 @@ gtk_dep = dependency('gtk4')
 libadwaita_dep = dependency('libadwaita-1')
 
 gst_dep = dependency('gstreamer-1.0')
+gst_base_dep = dependency('gstreamer-base-1.0')
+gst_audio_dep = dependency('gstreamer-audio-1.0')
+gst_video_dep = dependency('gstreamer-video-1.0')
 libsoup_dep = dependency('libsoup-3.0')
 
 gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
 xml_dep = dependency('libxml-2.0')
 
+sqlite_dep = dependency('sqlite3')
+
 subdir('core')
+subdir('data')
+subdir('service')
 subdir('app')
 subdir('plugins')

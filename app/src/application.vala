@@ -20,9 +20,10 @@ using Gtk;
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
 using PiPod.Core.Settings;
-using PiPod.Windows;
 
-namespace PiPod {
+using PiPod.App.Windows;
+
+namespace PiPod.App {
     public class PipodApplication : Adw.Application {
         private MainWindow? window;
 

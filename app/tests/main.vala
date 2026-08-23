@@ -20,7 +20,7 @@ using GLib;
 int main (string[] args) {
     Test.init(ref args);
 
-    PiPod.Tests.Utils.register_string_utils_tests();
+    PiPod.App.Tests.Utils.register_string_utils_tests();
 
     return Test.run();
 }

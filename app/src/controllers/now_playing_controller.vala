@@ -19,16 +19,17 @@ using GLib;
 
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
-using PiPod.Views;
 
-namespace PiPod.Controllers {
+using PiPod.App.Views;
+
+namespace PiPod.App.Controllers {
     public class NowPlayingController : BaseController<NowPlayingView> {
-        private MusicLibrary library;
+        private Gee.List<MusicLibrary> libraries;
 
-        public NowPlayingController (MusicLibrary library) {
+        public NowPlayingController (Gee.List<MusicLibrary> libraries) {
             base(new NowPlayingView ());
 
-            this.library = library;
+            this.libraries = libraries;
         }
 
         protected override void connect_view () {
@@ -46,16 +47,18 @@ namespace PiPod.Controllers {
                 view.set_album_art (null);
             }
 
-            try {
-                GLib.Bytes? bytes = yield library.get_artwork (song.album.cover);
+            foreach (var library in libraries) {
+                try {
+                    GLib.Bytes? bytes = yield library.get_artwork (song);
 
-                if (bytes == null) {
+                    if (bytes == null) {
+                        view.set_album_art (null);
+                    }
+
+                    view.set_album_art (bytes);
+                } catch (GLib.Error e) {
                     view.set_album_art (null);
                 }
-
-                view.set_album_art (bytes);
-            } catch (GLib.Error e) {
-                view.set_album_art (null);
             }
         }
     }

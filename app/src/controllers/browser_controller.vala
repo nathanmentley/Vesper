@@ -19,25 +19,26 @@ using GLib;
 
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
-using PiPod.Views;
 
-namespace PiPod.Controllers {
+using PiPod.App.Views;
+
+namespace PiPod.App.Controllers {
     public class BrowserController : BaseController<BrowserView> {
         public signal void play_requested (Song song);
-        private MusicLibrary library;
+        private Gee.List<MusicLibrary> libraries;
 
-        public BrowserController (MusicLibrary library) {
+        public BrowserController (Gee.List<MusicLibrary> libraries) {
             base (
                 new BrowserView ()
             );
 
-            this.library = library;
+            this.libraries = libraries;
         }
 
         protected override void connect_view () {
-            view.artist_selected.connect (artist => { load_albums.begin(artist); });
+            view.artist_selected.connect (artist => load_albums.begin(artist));
 
-            view.album_selected.connect (album => { load_album.begin(album); });
+            view.album_selected.connect (album => load_album.begin(album));
 
             view.song_selected.connect (play_song);
 
@@ -53,10 +54,12 @@ namespace PiPod.Controllers {
         public async void load_artists () {
             view.clear ();
             
-            Gee.List<Artist> artists = yield library.get_artists ();
+            foreach (var library in libraries) {
+                Gee.List<Artist> artists = yield library.get_artists ();
 
-            foreach (Artist artist in artists) {
-                view.add_artist(artist);
+                foreach (Artist artist in artists) {
+                    view.add_artist(artist);
+                }
             }
         }
 
@@ -64,28 +67,28 @@ namespace PiPod.Controllers {
             view.clear_albums ();
             view.clear_songs ();
 
-            Gee.List<Album> albums = yield library.get_albums (artist.id);
+            // Todo only look up from library of artist
+            foreach (var library in libraries) {
+                Gee.List<Album> albums = yield library.get_albums (artist.id);
 
-            foreach (Album album in albums) {
-                view.add_album (album);
+                foreach (Album album in albums) {
+                    view.add_album (album);
+                }
             }
         }
 
         private async void load_album (Album album) {
             view.clear_songs ();
 
-            Gee.List<Song> songs = yield library.get_tracks (album.id);
+            // Todo only look up from library of album
+            foreach (var library in libraries) {
+                Gee.List<Song> songs = yield library.get_tracks (album.id);
 
-            foreach (Song song in songs) {
-                view.add_song (song);
+                foreach (Song song in songs) {
+                    view.add_song (song);
+                }
             }
         }
-
-        /*
-         * -------------------------------------------------------------
-         * Playback
-         * -------------------------------------------------------------
-         */
 
         private void play_song (Song song) {
             if (song.stream_url == null) {

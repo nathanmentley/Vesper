@@ -20,9 +20,9 @@ using GLib;
 using PiPod.Core.Plugins;
 using PiPod.Core.Settings;
 
-using PiPod.Views;
+using PiPod.App.Views;
 
-namespace PiPod.Controllers {
+namespace PiPod.App.Controllers {
     public class SettingsController : BaseController<SettingsView> {
         public signal void connection_requested ();
 
@@ -30,21 +30,11 @@ namespace PiPod.Controllers {
 
         private Gee.List<SettingsProvider> setting_providers;
 
-        public SettingsController (
-            SettingsEngine settings_engine,
-            Gee.List<SettingsProvider> setting_providers
-        ) {
-            base (
-                new SettingsView (
-                    setting_providers
-                )
-            );
+        public SettingsController (SettingsEngine settings_engine, Gee.List<SettingsProvider> setting_providers) {
+            base (new SettingsView (setting_providers));
 
-            this.settings_engine =
-                settings_engine;
-
-            this.setting_providers =
-                setting_providers;
+            this.settings_engine = settings_engine;
+            this.setting_providers = setting_providers;
 
             load_settings ();
         }
@@ -57,58 +47,30 @@ namespace PiPod.Controllers {
             });
         }
 
-        /*
-         * -------------------------------------------------------------
-         * Load
-         * -------------------------------------------------------------
-         */
-
         private void load_settings () {
-            foreach (var provider in setting_providers) {
-                var definitions =
-                    provider.get_setting_definitions ();
+            foreach (SettingsProvider provider in setting_providers) {
+                var definitions = provider.get_setting_definitions ();
 
                 foreach (var definition in definitions) {
-                    var value =
-                        settings_engine.get_string (
-                            definition
-                        );
+                    var value = settings_engine.get_string (definition);
 
-                    view.set_setting_value (
-                        provider,
-                        definition,
-                        value
-                    );
+                    view.set_setting_value (provider, definition, value);
                 }
             }
         }
 
-        /*
-         * -------------------------------------------------------------
-         * Save
-         * -------------------------------------------------------------
-         */
-
         private void save_settings () {
-            foreach (var provider in setting_providers) {
-                var definitions =
-                    provider.get_setting_definitions ();
+            foreach (SettingsProvider provider in setting_providers) {
+                var definitions = provider.get_setting_definitions ();
 
                 foreach (var definition in definitions) {
-                    var value =
-                        view.get_setting_value (
-                            provider,
-                            definition
-                        );
+                    var value = view.get_setting_value (provider, definition);
 
                     if (value == null) {
                         continue;
                     }
 
-                    settings_engine.set_string (
-                        definition,
-                        value
-                    );
+                    settings_engine.set_string (definition, value);
                 }
             }
         }

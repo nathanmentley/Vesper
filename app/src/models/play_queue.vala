@@ -20,9 +20,9 @@ using GLib;
 
 using PiPod.Core.Models;
 
-namespace PiPod.Models {
+namespace PiPod.App.Models {
     public class PlayQueue : Object {
-        private ArrayList<Song> _songs = new ArrayList<Song> ();
+        private Gee.List<Song> _songs = new ArrayList<Song> ();
         private int _current_index = -1;
 
         public PlayQueue () {

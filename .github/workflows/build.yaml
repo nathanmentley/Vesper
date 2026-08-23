@@ -1,0 +1,78 @@
+name: Build and Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-26.04
+          - macos-15
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            ninja-build \
+            valac \
+            pkg-config \
+            libgee-0.8-dev \
+            libglib2.0-dev \
+            libpeas-2-dev \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libsoup-3.0-dev \
+            libgdk-pixbuf-2.0-dev \
+            libxml2-dev \
+            libsqlite3-dev
+
+      - name: Install Meson
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m pip install 'meson>=1.11.0'
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install \
+            meson \
+            ninja \
+            vala \
+            libgee \
+            libpeas \
+            gtk4 \
+            libadwaita \
+            gstreamer \
+            gst-plugins-base \
+            libsoup \
+            gdk-pixbuf \
+            libxml2 \
+            sqlite
+
+      - name: Check build tools
+        run: |
+          meson --version
+          ninja --version
+          valac --version
+
+      - name: Configure
+        run: meson setup build
+
+      - name: Build
+        run: meson compile -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs

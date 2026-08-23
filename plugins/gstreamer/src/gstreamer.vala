@@ -13,6 +13,8 @@ using Gst;
 using PiPod.Core.Plugins;
 using PiPod.Core.Settings;
 
+using PiPod.Plugins.GStreamer;
+
 namespace PiPod.Plugins.GStreamer {
     public sealed class GStreamerMusicEngine :
         GLib.Object,
@@ -38,10 +40,24 @@ namespace PiPod.Plugins.GStreamer {
         public GStreamerMusicEngine () {
         }
 
+        ~GStreamerMusicEngine () {
+            stop_position_timer ();
+            stop_bus ();
+
+            if (player != null) {
+                player.set_state (Gst.State.NULL);
+
+                player = null;
+            }
+        }
+
+        public void configure (SettingsEngine settings) {
+            // GStreamer is initialized once when the plugin
+            // module is registered.
+        }
 
         public Gee.List<SettingDefinition> get_setting_definitions () {
-            var settings =
-                new Gee.ArrayList<SettingDefinition> ();
+            var settings = new Gee.ArrayList<SettingDefinition> ();
 
             settings.add (
                 new SettingDefinition (
@@ -56,59 +72,35 @@ namespace PiPod.Plugins.GStreamer {
             return settings;
         }
 
-        public void configure (SettingsEngine settings) {
-            // GStreamer is initialized once when the plugin
-            // module is registered.
-        }
-
         public void set_source (string uri) {
             stop_player ();
 
-            string escaped_uri = uri.replace (
-                "\"",
-                "\\\""
-            );
+            string escaped_uri = uri.replace ("\"", "\\\"");
 
             try {
-                player = Gst.parse_launch (
-                    "playbin uri=\"" + escaped_uri + "\""
-                );
+                player = Gst.parse_launch ("playbin uri=\"" + escaped_uri + "\"");
             } catch (GLib.Error e) {
-                warning (
-                    "Failed to create GStreamer player: %s",
-                    e.message
-                );
+                warning ("Failed to create GStreamer player: %s", e.message);
 
-                set_playback_state (
-                    PlaybackState.STOPPED
-                );
+                set_playback_state (PlaybackState.STOPPED);
 
                 return;
             }
 
             if (player == null) {
-                warning (
-                    "GStreamer failed to create playbin"
-                );
+                warning ("GStreamer failed to create playbin");
 
                 return;
             }
 
-            player.set_property (
-                "volume",
-                volume
-            );
+            player.set_property ("volume", volume);
 
             bus = player.get_bus ();
 
             if (bus == null) {
-                warning (
-                    "GStreamer player has no bus"
-                );
+                warning ("GStreamer player has no bus");
 
-                player.set_state (
-                    Gst.State.NULL
-                );
+                player.set_state (Gst.State.NULL);
 
                 player = null;
 
@@ -117,13 +109,7 @@ namespace PiPod.Plugins.GStreamer {
 
             bus.add_signal_watch ();
 
-            bus.message.connect (
-                (bus, gst_message) => {
-                    handle_message (
-                        gst_message
-                    );
-                }
-            );
+            bus.message.connect ((_, gst_message) => handle_message (gst_message));
 
             start_position_timer ();
         }
@@ -143,10 +129,7 @@ namespace PiPod.Plugins.GStreamer {
 
             int64 position = 0;
 
-            bool success = player.query_position (
-                Gst.Format.TIME,
-                out position
-            );
+            bool success = player.query_position (Gst.Format.TIME, out position);
 
             if (!success) {
                 return 0;
@@ -162,10 +145,7 @@ namespace PiPod.Plugins.GStreamer {
 
             int64 duration = 0;
 
-            bool success = player.query_duration (
-                Gst.Format.TIME,
-                out duration
-            );
+            bool success = player.query_duration (Gst.Format.TIME, out duration);
 
             if (!success) {
                 return 0;
@@ -179,16 +159,12 @@ namespace PiPod.Plugins.GStreamer {
             stop_bus ();
 
             if (player != null) {
-                player.set_state (
-                    Gst.State.NULL
-                );
+                player.set_state (Gst.State.NULL);
 
                 player = null;
             }
 
-            set_playback_state (
-                PlaybackState.STOPPED
-            );
+            set_playback_state (PlaybackState.STOPPED);
         }
 
         public bool start_player () {
@@ -196,10 +172,7 @@ namespace PiPod.Plugins.GStreamer {
                 return false;
             }
 
-            Gst.StateChangeReturn result =
-                player.set_state (
-                    Gst.State.PLAYING
-                );
+            Gst.StateChangeReturn result = player.set_state (Gst.State.PLAYING);
 
             return result != Gst.StateChangeReturn.FAILURE;
         }
@@ -209,9 +182,7 @@ namespace PiPod.Plugins.GStreamer {
                 return;
             }
 
-            player.set_state (
-                Gst.State.PAUSED
-            );
+            player.set_state (Gst.State.PAUSED);
         }
 
         public void seek (int64 position) {
@@ -227,38 +198,25 @@ namespace PiPod.Plugins.GStreamer {
             );
 
             if (!success) {
-                warning (
-                    "GStreamer seek failed"
-                );
+                warning ("GStreamer seek failed");
             }
         }
 
         public void set_volume (double volume) {
-            this.volume = Math.fmin (
-                1.0,
-                Math.fmax (
-                    0.0,
-                    volume
-                )
-            );
+            this.volume = Math.fmin (1.0, Math.fmax (0.0, volume));
 
             if (player == null) {
                 return;
             }
 
-            player.set_property (
-                "volume",
-                this.volume
-            );
+            player.set_property ("volume", this.volume);
         }
 
         public double get_volume () {
             return volume;
         }
 
-        private void handle_message (
-            Gst.Message gst_message
-        ) {
+        private void handle_message (Gst.Message gst_message) {
             GLib.message (
                 "GStreamer message: %s from %s",
                 gst_message.type.to_string (),
@@ -267,27 +225,19 @@ namespace PiPod.Plugins.GStreamer {
 
             switch (gst_message.type) {
                 case Gst.MessageType.EOS:
-                    GLib.message (
-                        "GStreamer EOS received"
-                    );
+                    GLib.message ("GStreamer EOS received");
 
-                    set_playback_state (
-                        PlaybackState.FINISHED
-                    );
+                    set_playback_state (PlaybackState.FINISHED);
 
                     break;
 
                 case Gst.MessageType.ERROR:
-                    handle_error (
-                        gst_message
-                    );
+                    handle_error (gst_message);
 
                     break;
 
                 case Gst.MessageType.STATE_CHANGED:
-                    handle_state_changed (
-                        gst_message
-                    );
+                    handle_state_changed (gst_message);
 
                     break;
 
@@ -296,37 +246,22 @@ namespace PiPod.Plugins.GStreamer {
             }
         }
 
-        private void handle_error (
-            Gst.Message gst_message
-        ) {
+        private void handle_error (Gst.Message gst_message) {
             GLib.Error error;
             string debug;
 
-            gst_message.parse_error (
-                out error,
-                out debug
-            );
+            gst_message.parse_error (out error, out debug);
 
-            warning (
-                "GStreamer error: %s",
-                error.message
-            );
+            warning ("GStreamer error: %s", error.message);
 
             if (debug != null && debug != "") {
-                warning (
-                    "GStreamer debug: %s",
-                    debug
-                );
+                warning ("GStreamer debug: %s", debug);
             }
 
-            set_playback_state (
-                PlaybackState.STOPPED
-            );
+            set_playback_state (PlaybackState.STOPPED);
         }
 
-        private void handle_state_changed (
-            Gst.Message gst_message
-        ) {
+        private void handle_state_changed (Gst.Message gst_message) {
             if (player == null) {
                 return;
             }
@@ -339,31 +274,21 @@ namespace PiPod.Plugins.GStreamer {
             Gst.State new_state;
             Gst.State pending_state;
 
-            gst_message.parse_state_changed (
-                out old_state,
-                out new_state,
-                out pending_state
-            );
+            gst_message.parse_state_changed (out old_state, out new_state, out pending_state);
 
             switch (new_state) {
                 case Gst.State.PLAYING:
-                    set_playback_state (
-                        PlaybackState.PLAYING
-                    );
+                    set_playback_state (PlaybackState.PLAYING);
 
                     break;
 
                 case Gst.State.PAUSED:
-                    set_playback_state (
-                        PlaybackState.PAUSED
-                    );
+                    set_playback_state (PlaybackState.PAUSED);
 
                     break;
 
                 case Gst.State.NULL:
-                    set_playback_state (
-                        PlaybackState.STOPPED
-                    );
+                    set_playback_state (PlaybackState.STOPPED);
 
                     break;
 
@@ -389,34 +314,13 @@ namespace PiPod.Plugins.GStreamer {
 
             this.state_changed (state);
 
-            GLib.message (
-                "state_changed emitted"
-            );
+            GLib.message ("state_changed emitted");
         }
 
         private void start_position_timer () {
             stop_position_timer ();
 
-            position_timer = Timeout.add (
-                250,
-                () => {
-                    if (player == null) {
-                        position_timer = 0;
-
-                        return Source.REMOVE;
-                    }
-
-                    int64 position = get_position ();
-                    int64 duration = get_duration ();
-
-                    this.position_changed (
-                        position,
-                        duration
-                    );
-
-                    return Source.CONTINUE;
-                }
-            );
+            position_timer = Timeout.add (250, update_position);
         }
 
         private void stop_position_timer () {
@@ -424,11 +328,24 @@ namespace PiPod.Plugins.GStreamer {
                 return;
             }
 
-            Source.remove (
-                position_timer
-            );
+            Source.remove (position_timer);
 
             position_timer = 0;
+        }
+
+        private bool update_position() {
+            if (player == null) {
+                position_timer = 0;
+
+                return Source.REMOVE;
+            }
+
+            int64 position = get_position ();
+            int64 duration = get_duration ();
+
+            this.position_changed (position, duration);
+
+            return Source.CONTINUE;
         }
 
         private void stop_bus () {
@@ -440,42 +357,19 @@ namespace PiPod.Plugins.GStreamer {
 
             bus = null;
         }
-
-        ~GStreamerMusicEngine () {
-            stop_position_timer ();
-            stop_bus ();
-
-            if (player != null) {
-                player.set_state (
-                    Gst.State.NULL
-                );
-
-                player = null;
-            }
-        }
     }
 }
 
 [ModuleInit]
-public void peas_register_types (
-    TypeModule module
-) {
+public void peas_register_types (TypeModule module) {
     string[] items = {};
     unowned string[] args = items;
 
-    Gst.init (
-        ref args
-    );
+    Gst.init (ref args);
 
-    Peas.ObjectModule object_module =
-        module as Peas.ObjectModule;
+    Peas.ObjectModule object_module = module as Peas.ObjectModule;
 
-    object_module.register_extension_type (
-        typeof (MusicEngine),
-        typeof (
-            PiPod.Plugins.GStreamer.GStreamerMusicEngine
-        )
-    );
+    object_module.register_extension_type (typeof (MusicEngine), typeof (GStreamerMusicEngine));
 
-    object_module.register_extension_type (typeof (SettingsProvider), typeof (PiPod.Plugins.GStreamer.GStreamerMusicEngine));
+    object_module.register_extension_type (typeof (SettingsProvider), typeof (GStreamerMusicEngine));
 }

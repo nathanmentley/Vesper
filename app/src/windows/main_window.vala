@@ -23,11 +23,13 @@ using PiPod.Core.Models;
 using PiPod.Core.Plugins;
 using PiPod.Core.Settings;
 
-using PiPod.Controllers;
-using PiPod.Models;
-using PiPod.Views;
+using PiPod.Service.Plugins;
 
-namespace PiPod.Windows {
+using PiPod.App.Controllers;
+using PiPod.App.Models;
+using PiPod.App.Views;
+
+namespace PiPod.App.Windows {
     public class MainWindow : Adw.ApplicationWindow {
         private SettingsEngine settings;
 
@@ -78,12 +80,12 @@ namespace PiPod.Windows {
             PluginManager plugin_manager = new PluginManager("/Users/nathan/projects/pipod/build/plugins");
 
             Gee.List<SettingsProvider> setting_providers = get_plugin_impls (plugin_manager, typeof(SettingsProvider));
-            MusicLibrary library = get_first_plugin_impl(plugin_manager, typeof(MusicLibrary));
-            PlaylistProvider playlist_provider = get_first_plugin_impl(plugin_manager, typeof(PlaylistProvider));
-            MusicEngine music_engine = get_first_plugin_impl(plugin_manager, typeof(MusicEngine));
+            Gee.List<MusicLibrary> libraries = get_plugin_impls (plugin_manager, typeof(MusicLibrary));
+            PlaylistProvider playlist_provider = get_first_plugin_impl (plugin_manager, typeof(PlaylistProvider));
+            MusicEngine music_engine = get_first_plugin_impl (plugin_manager, typeof(MusicEngine));
 
-            this.browser_controller = new BrowserController (library);
-            this.now_playing_controller = new NowPlayingController (library);
+            this.browser_controller = new BrowserController (libraries);
+            this.now_playing_controller = new NowPlayingController (libraries);
             this.player_controller = new PlayerController (music_engine);
             this.playlist_controller = new PlaylistController (playlist, playlist_provider);
             this.settings_controller = new SettingsController (settings, setting_providers);

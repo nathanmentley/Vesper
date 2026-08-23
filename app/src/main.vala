@@ -15,8 +15,9 @@
  * along with this program.  If not, see <https://gnu.org>.
  */
 
-using PiPod;
 using PiPod.Core;
+
+using PiPod.App;
 
 int main (string[] args) {
     Gtk.Application app = new PipodApplication ();

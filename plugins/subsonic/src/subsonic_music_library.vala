@@ -136,8 +136,8 @@ namespace PiPod.Plugins.Subsonic {
             return yield client.get_songs (album_id);
         }
 
-        public async GLib.Bytes? get_artwork (string artwork_id) {
-            return yield client.get_cover_bytes (artwork_id);
+        public async GLib.Bytes? get_artwork (Song song) {
+            return yield client.get_cover_bytes (song.album.cover);
         }
 
         public async Gee.List<Playlist> get_playlists () {

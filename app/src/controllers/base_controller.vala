@@ -18,9 +18,9 @@
 using Gtk;
 using GLib;
 
-using PiPod.Views;
+using PiPod.App.Views;
 
-namespace PiPod.Controllers {
+namespace PiPod.App.Controllers {
     public abstract class BaseController<TView> : Object {
         protected TView view;
 

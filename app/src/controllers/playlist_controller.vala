@@ -17,85 +17,36 @@
 
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
-using PiPod.Models;
-using PiPod.Views;
 
-namespace PiPod.Controllers {
+using PiPod.App.Models;
+using PiPod.App.Views;
+
+namespace PiPod.App.Controllers {
     public class PlaylistController : BaseController<PlaylistView> {
         public signal void selected ();
 
         private PlaylistProvider playlist_provider;
         private PlayQueue queue;
 
-        public PlaylistController (
-            PlayQueue playlist,
-            PlaylistProvider playlist_provider
-        ) {
-            base (
-                new PlaylistView (playlist)
-            );
+        public PlaylistController (PlayQueue playlist, PlaylistProvider playlist_provider) {
+            base (new PlaylistView (playlist));
 
             this.playlist_provider = playlist_provider;
             this.queue = playlist;
         }
 
         protected override void connect_view () {
-            /*
-             * ---------------------------------------------------------
-             * Local queue selection
-             * ---------------------------------------------------------
-             */
-
-            view.selected.connect (() => {
-                selected ();
-            });
-
-            /*
-             * ---------------------------------------------------------
-             * Playlist selection
-             * ---------------------------------------------------------
-             */
-
-            view.change_playlist_request.connect (playlist => { load_playlist.begin(playlist); });
-
-            /*
-             * ---------------------------------------------------------
-             * Playlist CRUD
-             * ---------------------------------------------------------
-             */
-
-            view.create_playlist_request.connect (
-                name => {
-                    create_playlist (name);
-                }
-            );
-
-            view.rename_playlist_request.connect (
-                (playlist, name) => {
-                    save_playlist (playlist, name);
-                }
-            );
-
-            view.delete_playlist_request.connect (
-                playlist => {
-                    delete_playlist (playlist);
-                }
-            );
+            view.selected.connect (() => selected ());
+            view.change_playlist_request.connect (playlist => load_playlist.begin (playlist));
+            view.create_playlist_request.connect (name => create_playlist (name));
+            view.rename_playlist_request.connect ((playlist, name) => save_playlist (playlist, name));
+            view.delete_playlist_request.connect (playlist => delete_playlist (playlist));
         }
-
-        /*
-         * =============================================================
-         * Loading playlists
-         * =============================================================
-         */
 
         public async void load_playlists () {
             view.clear_playlist_dropdown ();
 
-            /*
-             * The local working queue is always available.
-             */
-
+            // The local working queue is always available.
             view.add_playlist_to_dropdown (
                 new Playlist (
                     "-1",
@@ -113,25 +64,11 @@ namespace PiPod.Controllers {
             }
         }
 
-        /*
-         * =============================================================
-         * Rebuild local queue
-         * =============================================================
-         */
-
         public void rebuild () {
             view.rebuild ();
         }
 
-        /*
-         * =============================================================
-         * Load a playlist
-         * =============================================================
-         */
-
-        private async void load_playlist (
-            Playlist playlist
-        ) {
+        private async void load_playlist (Playlist playlist) {
             queue.clear ();
 
             if (playlist.id == "-1") {
@@ -149,98 +86,13 @@ namespace PiPod.Controllers {
             view.rebuild ();
         }
 
-        /*
-         * =============================================================
-         * Create playlist
-         * =============================================================
-         */
-
-        private void create_playlist (
-            string name
-        ) {
-            stdout.printf (
-                "[PlaylistController] CREATE playlist\n"
-            );
-
-            stdout.printf (
-                "  Name: %s\n",
-                name
-            );
-
-            stdout.printf (
-                "  Songs: %d\n",
-                queue.get_songs ().size
-            );
-
-            foreach (Song song in queue.get_songs ()) {
-                stdout.printf (
-                    "  - %s (%s)\n",
-                    song.title,
-                    song.id
-                );
-            }
+        private void create_playlist (string name) {
         }
 
-        /*
-         * =============================================================
-         * Rename/update playlist
-         * =============================================================
-         */
-
-        private void save_playlist (
-            Playlist playlist,
-            string name
-        ) {
-            stdout.printf (
-                "[PlaylistController] UPDATE playlist\n"
-            );
-
-            stdout.printf (
-                "  ID: %s\n",
-                playlist.id
-            );
-
-            stdout.printf (
-                "  Name: %s\n",
-                name
-            );
-
-            stdout.printf (
-                "  Songs: %d\n",
-                queue.get_songs ().size
-            );
-
-            foreach (Song song in queue.get_songs ()) {
-                stdout.printf (
-                    "  - %s (%s)\n",
-                    song.title,
-                    song.id
-                );
-            }
+        private void save_playlist (Playlist playlist, string name) {
         }
 
-        /*
-         * =============================================================
-         * Delete playlist
-         * =============================================================
-         */
-
-        private void delete_playlist (
-            Playlist playlist
-        ) {
-            stdout.printf (
-                "[PlaylistController] DELETE playlist\n"
-            );
-
-            stdout.printf (
-                "  ID: %s\n",
-                playlist.id
-            );
-
-            stdout.printf (
-                "  Name: %s\n",
-                playlist.name
-            );
+        private void delete_playlist (Playlist playlist) {
         }
     }
 }

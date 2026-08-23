@@ -17,7 +17,7 @@
 
 using GLib;
 
-namespace PiPod.Core.Utils {
+namespace PiPod.App.Utils {
     public class StringUtils : Object {
         public const string EMPTY = "";
 

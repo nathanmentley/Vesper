@@ -1,4 +1,3 @@
-                //
 /*
  * Copyright (C) 2026 Nathan Mentley <nathanmentley@gmail.com>
  *
@@ -12,9 +11,10 @@ using GLib;
 using Peas;
 using Gee;
 
+using PiPod.Core.Plugins;
 using PiPod.Core.Settings;
 
-namespace PiPod.Core.Plugins {
+namespace PiPod.Service.Plugins {
     public class PluginManager : Object {
         private Peas.Engine engine;
 

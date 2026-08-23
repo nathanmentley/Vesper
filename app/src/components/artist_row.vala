@@ -1,109 +1,71 @@
+/*
+ * Copyright (C) 2026 Nathan Mentley <nathanmentley@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://gnu.org>.
+ */
+
 using Gtk;
+
 using PiPod.Core.Models;
 
-namespace PiPod.Components {
+namespace PiPod.App.Components {
     public class ArtistRow : Button {
         public Artist artist { get; construct; }
 
         public signal void selected (Artist artist);
 
-        public ArtistRow (
-            Artist artist
-        ) {
-            Object (
-                artist: artist
-            );
+        public ArtistRow (Artist artist) {
+            Object (artist: artist);
 
-            halign =
-                Align.FILL;
+            build_ui ();
 
+            connect_signals ();
+        }
+
+        private void build_ui () {
+            halign = Align.FILL;
             hexpand = true;
-
             has_frame = false;
 
-            tooltip_text =
-                artist.name;
+            tooltip_text = artist.name;
 
-            /*
-             * ---------------------------------------------------------
-             * Row
-             * ---------------------------------------------------------
-             */
-
-            var row =
-                new Box (
-                    Orientation.HORIZONTAL,
-                    12
-                );
-
+            Box row = new Box (Orientation.HORIZONTAL, 12);
             row.set_margin_top (8);
             row.set_margin_bottom (8);
             row.set_margin_start (12);
             row.set_margin_end (12);
 
-            /*
-             * Icon
-             */
-
-            var icon =
-                new Image.from_icon_name (
-                    "system-users-symbolic"
-                );
-
+            Image icon = new Image.from_icon_name ("system-users-symbolic");
             icon.pixel_size = 20;
 
-            row.append (
-                icon
-            );
+            Label label = new Label (artist.name);
+            label.halign = Align.START;
+            label.hexpand = true;
+            label.ellipsize = Pango.EllipsizeMode.END;
 
-            /*
-             * Name
-             */
+            Image arrow = new Image.from_icon_name ("go-next-symbolic");
+            arrow.add_css_class ("dim-label");
 
-            var label =
-                new Label (
-                    artist.name
-                );
+            row.append (icon);
+            row.append (label);
+            row.append (arrow);
 
-            label.halign =
-                Align.START;
+            set_child (row);
+        }
 
-            label.hexpand =
-                true;
-
-            label.ellipsize =
-                Pango.EllipsizeMode.END;
-
-            row.append (
-                label
-            );
-
-            /*
-             * Arrow
-             */
-
-            var arrow =
-                new Image.from_icon_name (
-                    "go-next-symbolic"
-                );
-
-            arrow.add_css_class (
-                "dim-label"
-            );
-
-            row.append (
-                arrow
-            );
-
-            set_child (
-                row
-            );
-
-            clicked.connect (() => {
-                selected (
-                    artist
-                );
-            });
+        private void connect_signals () {
+            clicked.connect (() => selected (artist));
         }
     }
 }

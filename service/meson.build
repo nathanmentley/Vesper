@@ -13,28 +13,35 @@
 # You should have received a copy of the GNU General Public License
 # along with PiPod.  If not, see <https://gnu.org>.
 
-filesystem_plugin_sources = [
-  'src/filesystem_music_library.vala',
+service_sources = [
+  'src/plugins/plugin_manager.vala',
 ]
 
-filesystem_pipod_plugin = library(
-  'pipod-filesystem-plugin',
-  filesystem_plugin_sources,
+pipod_service = library(
+  'pipod-service',
+  service_sources,
   dependencies: [
     glib_dep,
+    gee_dep,
     gobject_dep,
-    libpeas_dep,
     pipod_plugin_dep,
+    pipod_data_dep,
   ],
-  vala_header: 'pipod-filesystem-plugin.h',
-  vala_vapi: 'pipod-filesystem-plugin.vapi',
+  vala_header: 'pipod-service.h',
+  vala_vapi: 'pipod-service.vapi',
   install_vala_header: true,
   install_vala_vapi: true,
   install: true,
 )
 
-configure_file(
-  input: 'filesystem.plugin',
-  output: 'filesystem.plugin',
-  copy: true
+pipod_service_dep = declare_dependency(
+  link_with: pipod_service,
+  include_directories: include_directories('.'),
+  dependencies: [
+    glib_dep,
+    gee_dep,
+    gobject_dep,
+    pipod_plugin_dep,
+    pipod_data_dep,
+  ],
 )

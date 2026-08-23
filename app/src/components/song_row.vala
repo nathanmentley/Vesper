@@ -16,108 +16,56 @@
  */
 
 using Gtk;
+
 using PiPod.Core.Models;
 
-namespace PiPod.Components {
+namespace PiPod.App.Components {
     public class SongRow : Button {
         public Song song { get; construct; }
 
         public signal void selected (Song song);
 
-        public SongRow (
-            Song song
-        ) {
-            Object (
-                song: song
-            );
+        public SongRow (Song song) {
+            Object (song: song);
 
-            halign =
-                Align.FILL;
+            build_ui ();
 
+            connect_signals ();
+        }
+
+        private void build_ui () {
+            halign = Align.FILL;
             hexpand = true;
-
             has_frame = false;
 
-            tooltip_text =
-                song.title;
+            tooltip_text = song.title;
 
-            var row =
-                new Box (
-                    Orientation.HORIZONTAL,
-                    12
-                );
-
+            Box row = new Box (Orientation.HORIZONTAL, 12);
             row.set_margin_top (8);
             row.set_margin_bottom (8);
             row.set_margin_start (12);
             row.set_margin_end (12);
 
-            /*
-             * Song icon
-             */
-
-            var icon =
-                new Image.from_icon_name (
-                    "audio-x-generic-symbolic"
-                );
-
+            Image icon = new Image.from_icon_name ("audio-x-generic-symbolic");
             icon.pixel_size = 20;
 
-            row.append (
-                icon
-            );
+            Label label = new Label (song.title);
+            label.halign = Align.START;
+            label.hexpand = true;
+            label.ellipsize = Pango.EllipsizeMode.END;
 
-            /*
-             * Song title
-             */
+            Image add_icon = new Image.from_icon_name ("list-add-symbolic");
+            add_icon.add_css_class ("dim-label");
 
-            var label =
-                new Label (
-                    song.title
-                );
+            row.append (icon);
+            row.append (label);
+            row.append (add_icon);
 
-            label.halign =
-                Align.START;
+            set_child (row);
+        }
 
-            label.hexpand =
-                true;
-
-            label.ellipsize =
-                Pango.EllipsizeMode.END;
-
-            row.append (
-                label
-            );
-
-            /*
-             * Play icon
-             *
-             * Unlike Artists and Albums, Songs don't navigate
-             * somewhere else. Selecting one starts playback.
-             */
-
-            var add_icon =
-                new Image.from_icon_name (
-                    "list-add-symbolic"
-                );
-
-            add_icon.add_css_class (
-                "dim-label"
-            );
-
-            row.append (
-                add_icon
-            );
-
-            set_child (
-                row
-            );
-
-            clicked.connect (() => {
-                selected (
-                    song
-                );
-            });
+        private void connect_signals () {
+            clicked.connect (() => selected (song));
         }
     }
 }

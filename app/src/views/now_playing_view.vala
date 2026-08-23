@@ -19,10 +19,11 @@ using Gtk;
 using Adw;
 using Gdk;
 
-using PiPod.Core.Utils;
 using PiPod.Core.Models;
 
-namespace PiPod.Views {
+using PiPod.App.Utils;
+
+namespace PiPod.App.Views {
     public class NowPlayingView : BaseView {
         private Image album_art;
 

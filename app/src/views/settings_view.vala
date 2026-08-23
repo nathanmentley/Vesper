@@ -21,9 +21,10 @@ using Adw;
 using PiPod.Core.Models;
 using PiPod.Core.Plugins;
 using PiPod.Core.Settings;
-using PiPod.Core.Utils;
 
-namespace PiPod.Views {
+using PiPod.App.Utils;
+
+namespace PiPod.App.Views {
     public class SettingsView : BaseView {
         public signal void connection_requested ();
 
