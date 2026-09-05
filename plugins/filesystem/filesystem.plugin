@@ -1,5 +1,0 @@
-[Plugin]
-Module=pipod-filesystem-plugin
-Name=Filesystem
-Description=Filesystem music library
-Loader=C

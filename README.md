@@ -1,6 +1,6 @@
-# PiPod
+# Vesper
 
-PiPod is a desktop music player written in [Vala](https://vala.dev/) using GTK 4 and libadwaita. It connects to Subsonic-compatible music servers such as Navidrome and provides a native desktop interface for browsing and playing music.
+Vesper is a desktop music player written in [Vala](https://vala.dev/) using GTK 4 and libadwaita. It connects to Subsonic-compatible music servers such as Navidrome and provides a native desktop interface for browsing and playing music.
 
 ## Features
 
@@ -25,7 +25,7 @@ PiPod is a desktop music player written in [Vala](https://vala.dev/) using GTK 4
 
 ## Requirements
 
-PiPod is built with:
+Vesper is built with:
 
 - [Meson](https://mesonbuild.com/)
 - [Ninja](https://ninja-build.org/)
@@ -73,10 +73,10 @@ meson setup build
 meson compile -C build
 ```
 
-Run PiPod:
+Run Vesper:
 
 ```bash
-./build/pipod
+./build/src/app/vesper
 ```
 
 Run the test suite:
@@ -115,7 +115,7 @@ Then:
 ```bash
 meson setup build
 meson compile -C build
-./build/pipod
+./build/src/app/vesper
 ```
 
 Run tests with:
@@ -150,12 +150,12 @@ Then:
 ```bash
 meson setup build
 meson compile -C build
-./build/pipod
+./build/src/app/vesper
 ```
 
 ## macOS
 
-PiPod is primarily developed and targeted for Linux, but GTK 4, libadwaita, GStreamer, and Vala are available on macOS, so building it there is possible.
+Vesper is primarily developed and targeted for Linux, but GTK 4, libadwaita, GStreamer, and Vala are available on macOS, so building it there is possible.
 
 The easiest starting point is [Homebrew](https://brew.sh/).
 
@@ -188,7 +188,7 @@ meson compile -C build
 Run it with:
 
 ```bash
-./build/app/pipod
+./build/src/app/vesper
 ```
 
 ### macOS notes
@@ -203,7 +203,7 @@ The project does not currently provide a native macOS application bundle or inst
 
 ### Windows
 
-GTK 4, libadwaita, GStreamer, and Vala can be made to work on Windows, but PiPod is currently designed primarily around the Linux/GNOME environment.
+GTK 4, libadwaita, GStreamer, and Vala can be made to work on Windows, but Vesper is currently designed primarily around the Linux/GNOME environment.
 
 Windows support would likely require additional work around:
 
@@ -217,7 +217,7 @@ Windows is therefore not currently a supported target.
 
 ### BSD and other Unix-like systems
 
-PiPod may be buildable on other Unix-like systems that provide the required GTK 4, libadwaita, GStreamer, libsoup, and Vala dependencies.
+Vesper may be buildable on other Unix-like systems that provide the required GTK 4, libadwaita, GStreamer, libsoup, and Vala dependencies.
 
 No additional platform-specific support is currently provided.
 
@@ -227,7 +227,7 @@ After cloning the repository:
 
 ```bash
 git clone <repository-url>
-cd pipod
+cd vesper
 ```
 
 Configure the build:
@@ -245,7 +245,7 @@ meson compile -C build
 Run:
 
 ```bash
-./build/pipod
+./build/src/app/vesper
 ```
 
 Run tests:
@@ -264,7 +264,7 @@ meson compile -C build
 
 ## Installing
 
-The Meson project is configured to install the `pipod` executable.
+The Meson project is configured to install the `vesper` executable.
 
 To install it:
 
@@ -282,7 +282,7 @@ sudo meson install -C build
 
 ## Development
 
-PiPod uses Meson to build both the application and its unit tests.
+Vesper uses Meson to build both the application and its unit tests.
 
 The project is organized roughly as follows:
 
@@ -324,7 +324,7 @@ meson test -C build --verbose
 
 ## Music Server
 
-PiPod communicates with Subsonic-compatible APIs. It is currently developed with [Navidrome](https://www.navidrome.org/) as the primary server target.
+Vesper communicates with Subsonic-compatible APIs. It is currently developed with [Navidrome](https://www.navidrome.org/) as the primary server target.
 
 You will need:
 
@@ -333,11 +333,11 @@ You will need:
 - A username
 - A password or other supported authentication credentials
 
-PiPod does not provide a music server itself. Your music library remains on the configured server.
+Vesper does not provide a music server itself. Your music library remains on the configured server.
 
 ## License
 
-PiPod is licensed under the **GNU General Public License v3.0 or later**. See the [LICENSE](LICENSE) file for details.
+Vesper is licensed under the **GNU General Public License v3.0 or later**. See the [LICENSE](LICENSE) file for details.
 
 ```text
 Copyright (C) 2026 Nathan Mentley <nathanmentley@gmail.com>

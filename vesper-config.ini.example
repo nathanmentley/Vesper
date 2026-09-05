@@ -1,0 +1,14 @@
+[general]
+plugin-directory=./build/src/plugins
+database-directory=./data.db
+
+[gstreamer-1]
+server-url=33
+
+[subsonic-1]
+server-url=https://navidrome.example.fake
+username=username
+password=password
+
+[filesystem-1]
+directory=/usr/username/musiclib

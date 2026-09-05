@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <!-- The prefix creates a virtual, clean path inside your Vala binary -->
+  <gresource prefix="/com/vesper/app">
+    <file>images/placeholder.svg</file>
+    <file>styles/vesper.css</file>
+  </gresource>
+  <!-- The prefix acts as a virtual directory inside your binary -->
+  <gresource prefix="/com/poketrirx/vesper">
+    <file>icons/scalable/apps/com.poketrirx.vesper.png</file>
+  </gresource>
+</gresources>

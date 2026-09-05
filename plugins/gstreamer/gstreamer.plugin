@@ -1,5 +1,0 @@
-[Plugin]
-Module=pipod-gstreamer-plugin
-Name=GStreamer
-Description=GStreamer music engine
-Loader=C

@@ -1,0 +1,5 @@
+[Plugin]
+Module=vesper-gstreamer-plugin
+Name=GStreamer
+Description=GStreamer music engine
+Loader=C

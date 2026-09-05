@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<gresources>
-  <!-- The prefix creates a virtual, clean path inside your Vala binary -->
-  <gresource prefix="/com/pipod/app">
-    <file>images/placeholder.svg</file>
-    <file>styles/pipod.css</file>
-  </gresource>
-</gresources>
