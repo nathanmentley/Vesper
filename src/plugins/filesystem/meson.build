@@ -14,8 +14,11 @@
 # along with Vesper.  If not, see <https://gnu.org>.
 
 filesystem_plugin_sources = [
+  'src/config.vala',
+  'src/entrypoint.vala',
   'src/filesystem_music_library.vala',
   'src/metadata_reader.vala',
+  'src/track_metadata.vala',
 ]
 
 filesystem_vesper_plugin = library(

@@ -20,7 +20,7 @@ using Sqlite;
 
 namespace Vesper.Data {
     public class Migration : Object {
-        private const int CURRENT_VERSION = 2;
+        private const int CURRENT_VERSION = 3;
 
         public static void migrate (Sqlite.Database db) throws Error {
             int version = get_version (db);
@@ -30,12 +30,19 @@ namespace Vesper.Data {
                     case 0:
                         migrate_v1 (db);
                         migrate_v2 (db);
-                        version = 2;
+                        migrate_v3 (db);
+                        version = 3;
                         break;
 
                     case 1:
                         migrate_v2 (db);
-                        version = 2;
+                        migrate_v3 (db);
+                        version = 3;
+                        break;
+
+                    case 2:
+                        migrate_v3 (db);
+                        version = 3;
                         break;
 
                     default:
@@ -300,6 +307,35 @@ namespace Vesper.Data {
                 """);
 
                 set_version (db, 2);
+
+                exec (db, "COMMIT;");
+            } catch (Error e) {
+                exec (db, "ROLLBACK;");
+                throw e;
+            }
+        }
+        
+        private static void migrate_v3 (
+            Sqlite.Database db
+        ) throws Error {
+            exec (db, "BEGIN TRANSACTION;");
+
+            try {
+                exec (db, """
+                    CREATE TABLE artwork_cache (
+                        key TEXT PRIMARY KEY,
+                        data BLOB NOT NULL,
+                        last_used INTEGER NOT NULL,
+                        use_count INTEGER NOT NULL DEFAULT 0
+                    );
+                """);
+
+                exec (db, """
+                    CREATE INDEX idx_artwork_cache_last_used
+                    ON artwork_cache(last_used);
+                """);
+
+                set_version (db, 3);
 
                 exec (db, "COMMIT;");
             } catch (Error e) {

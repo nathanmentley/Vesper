@@ -14,6 +14,8 @@
 # along with Vesper.  If not, see <https://gnu.org>.
 
 data_sources = [
+  'src/art_cache_repository_impl.vala',
+  'src/art_cache_repository.vala',
   'src/database_impl.vala',
   'src/database.vala',
   'src/library_repository_impl.vala',

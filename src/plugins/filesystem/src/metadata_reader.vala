@@ -11,23 +11,6 @@ using Gst;
 using Gst.PbUtils;
 
 namespace Vesper.Plugins.Filesystem {
-
-    public class TrackMetadata : GLib.Object {
-        public string? title { get; set; }
-        public string? artist { get; set; }
-        public string? album { get; set; }
-        public string? album_artist { get; set; }
-        public string? genre { get; set; }
-
-        public uint? track_number { get; set; }
-        public uint? disc_number { get; set; }
-        public uint? year { get; set; }
-
-        public uint64? duration { get; set; }
-
-        public GLib.Bytes? artwork { get; set; }
-    }
-
     public class MetadataReader : GLib.Object {
         private Gst.PbUtils.Discoverer discoverer;
 

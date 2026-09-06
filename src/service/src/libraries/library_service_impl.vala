@@ -19,9 +19,15 @@ namespace Vesper.Service.Libraries {
     public sealed class LibraryServiceImpl : LibraryService, Object {
         private Gee.List<MusicLibrary> music_libraries;
         private LibraryRepository library_repository;
+        private ArtworkCacheRepository artwork_cache_repository;
 
-        public LibraryServiceImpl (LibraryRepository library_repository, Gee.List<MusicLibrary> music_libraries) {
+        public LibraryServiceImpl (
+            LibraryRepository library_repository,
+            ArtworkCacheRepository artwork_cache_repository,
+            Gee.List<MusicLibrary> music_libraries
+        ) {
             this.library_repository = library_repository;
+            this.artwork_cache_repository = artwork_cache_repository;
             this.music_libraries = music_libraries;
         }
 
@@ -78,6 +84,11 @@ namespace Vesper.Service.Libraries {
                     new DateTime.now_utc ().to_unix ()
                 );
             }
+
+            artwork_cache_repository.evict (
+                30 * 24 * 60 * 60,
+                500 * 1024 * 1024
+            );
 
             library_refresh ();
         }
@@ -145,10 +156,33 @@ namespace Vesper.Service.Libraries {
         }
 
         public async GLib.Bytes? get_artwork (Song song) {
+            if (song.album.cover == null) {
+                return null;
+            }
+
             foreach (MusicLibrary music_library in music_libraries) {
-                GLib.Bytes? artwork = yield music_library.get_artwork (song);
+                string key = "%s:%s:%s".printf (
+                    music_library.get_id (),
+                    song.album.id,
+                    song.album.cover
+                );
+
+                GLib.Bytes? cached =
+                    artwork_cache_repository.get (key);
+
+                if (cached != null) {
+                    return cached;
+                }
+
+                GLib.Bytes? artwork =
+                    yield music_library.get_artwork (song);
 
                 if (artwork != null) {
+                    artwork_cache_repository.save (
+                        key,
+                        artwork
+                    );
+
                     return artwork;
                 }
             }

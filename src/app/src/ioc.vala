@@ -55,6 +55,7 @@ namespace Vesper.App {
 
             Database database = new DatabaseImpl (data_directory);
 
+            ArtworkCacheRepository artwork_cache_repository = new ArtworkCacheRepositoryImpl (database);
             PlaylistRepository playlist_repository = new PlaylistRepositoryImpl (database);
             LibraryRepository library_repository = new LibraryRepositoryImpl (database);
 
@@ -74,7 +75,7 @@ namespace Vesper.App {
             Gee.List<MusicLibrary> libraries = get_plugin_impls (plugin_manager, settings, typeof(MusicLibrary));
             MusicEngine music_engine = get_first_plugin_impl (plugin_manager, settings, typeof(MusicEngine));
 
-            library_service = new LibraryServiceImpl (library_repository, libraries);
+            library_service = new LibraryServiceImpl (library_repository, artwork_cache_repository, libraries);
             media_service = new MediaServiceImpl (music_engine);
             settings_service = new SettingsServiceImpl (settings, setting_providers);
             playlist_service = new PlaylistServiceImpl (playlist_repository, library_service);

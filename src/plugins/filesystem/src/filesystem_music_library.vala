@@ -12,22 +12,6 @@ using Vesper.Core.Plugins;
 using Vesper.Core.Settings;
 
 namespace Vesper.Plugins.Filesystem {
-    public sealed class Config: Object {
-        private SettingsEngine settings;
-        private SettingDefinition directory_settings_def;
-
-        public string directory {
-            owned get {
-                return settings.get_string(directory_settings_def);
-            }
-        }
-
-        public Config (SettingsEngine settings, SettingDefinition directory_settings_def) {
-            this.settings = settings;
-            this.directory_settings_def = directory_settings_def;
-        }
-    }
-
     public class FilesystemMusicLibrary :
         Plugin,
         ConfigurablePlugin,
@@ -299,12 +283,4 @@ namespace Vesper.Plugins.Filesystem {
             return null;
         }
     }
-}
-
-[ModuleInit]
-public void peas_register_types (TypeModule module) {
-    Peas.ObjectModule object_module = module as Peas.ObjectModule;
-
-    object_module.register_extension_type (typeof (MusicLibrary), typeof (Vesper.Plugins.Filesystem.FilesystemMusicLibrary));
-    object_module.register_extension_type (typeof (SettingsProvider), typeof (Vesper.Plugins.Filesystem.FilesystemMusicLibrary));
 }
