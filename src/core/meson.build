@@ -19,6 +19,7 @@ core_sources = [
   'src/models/library.vala',
   'src/models/playlist_item.vala',
   'src/models/playlist.vala',
+  'src/models/search_result.vala',
   'src/models/song.vala',
 
   'src/plugins/configurable_plugin.vala',

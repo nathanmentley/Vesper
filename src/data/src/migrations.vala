@@ -153,6 +153,78 @@ namespace Vesper.Data {
                 """);
 
                 exec (db, """
+                    CREATE VIRTUAL TABLE library_search USING fts5(
+                        library_id UNINDEXED,
+                        song_id UNINDEXED,
+                        artist_id UNINDEXED,
+                        album_id UNINDEXED,
+                        body
+                    );
+                """);
+
+                exec (db, """
+                    CREATE TRIGGER song_ai AFTER INSERT ON songs BEGIN
+                        INSERT INTO library_search(
+                            library_id,
+                            song_id,
+                            artist_id,
+                            album_id,
+                            body
+                        )
+                        SELECT
+                            new.library_id,
+                            new.id,
+                            new.artist_id,
+                            new.album_id,
+                            new.title || ' ' || artists.name || ' ' || albums.name
+                        FROM artists
+                        JOIN albums ON albums.id = new.album_id
+                        WHERE artists.id = new.artist_id;
+                    END;
+                """);
+
+                exec (db, """
+                    CREATE TRIGGER song_ad AFTER DELETE ON songs BEGIN
+                        DELETE FROM library_search
+                        WHERE rowid IN (
+                            SELECT rowid
+                            FROM library_search
+                            WHERE library_id = old.library_id
+                              AND song_id = old.id
+                        );
+                    END;
+                """);
+
+                exec (db, """
+                    CREATE TRIGGER song_au AFTER UPDATE ON songs BEGIN
+                        DELETE FROM library_search
+                        WHERE rowid IN (
+                            SELECT rowid
+                            FROM library_search
+                            WHERE library_id = old.library_id
+                              AND song_id = old.id
+                        );
+
+                        INSERT INTO library_search(
+                            library_id,
+                            song_id,
+                            artist_id,
+                            album_id,
+                            body
+                        )
+                        SELECT
+                            new.library_id,
+                            new.id,
+                            new.artist_id,
+                            new.album_id,
+                            new.title || ' ' || artists.name || ' ' || albums.name
+                        FROM artists
+                        JOIN albums ON albums.id = new.album_id
+                        WHERE artists.id = new.artist_id;
+                    END;
+                """);
+
+                exec (db, """
                     CREATE INDEX idx_artists_library
                     ON artists(library_id);
                 """);

@@ -26,9 +26,13 @@ using Vesper.App.Views;
 namespace Vesper.App.Controllers {
     public class BrowserController : BaseController<BrowserView> {
         public signal void play_requested (Song song);
+
         private LibraryService library_service;
 
-        public BrowserController (LibraryService library_service, Gtk.Window parent_window) {
+        public BrowserController (
+            LibraryService library_service,
+            Gtk.Window parent_window
+        ) {
             base (
                 new BrowserView (parent_window)
             );
@@ -37,11 +41,24 @@ namespace Vesper.App.Controllers {
         }
 
         protected override void connect_view () {
-            view.artist_selected.connect (artist => load_albums.begin(artist));
+            view.artist_selected.connect (
+                artist => load_albums.begin (artist)
+            );
 
-            view.album_selected.connect ((artist, album) => load_album.begin(artist, album));
+            view.album_selected.connect (
+                (artist, album) => load_album.begin (
+                    artist,
+                    album
+                )
+            );
 
-            view.song_selected.connect (play_song);
+            view.song_selected.connect (
+                play_song
+            );
+
+            view.search_requested.connect (
+                query => search.begin (query)
+            );
 
             view.add_album_to_queue_requested.connect (
                 (album, songs) => {
@@ -53,38 +70,73 @@ namespace Vesper.App.Controllers {
         }
 
         public async void load_artists () {
-            view.clear ();
-            
-            Gee.List<Artist> artists = yield library_service.get_artists ();
+            view.show_browse ();
 
-            foreach (Artist artist in artists) {
-                view.add_artist(artist);
-            }
+            Gee.List<Artist> artists =
+                yield library_service.get_artists ();
+
+            view.show_artists (
+                artists.to_array ()
+            );
         }
 
-        private async void load_albums (Artist artist) {
+        private async void load_albums (
+            Artist artist
+        ) {
             view.clear_albums ();
             view.clear_songs ();
 
-            Gee.List<Album> albums = yield library_service.get_albums (artist.library_id, artist.id);
+            Gee.List<Album> albums =
+                yield library_service.get_albums (
+                    artist.library_id,
+                    artist.id
+                );
 
-            foreach (Album album in albums) {
-                view.add_album (artist, album);
-            }
+            view.show_albums (
+                artist,
+                albums.to_array ()
+            );
         }
 
-        private async void load_album (Artist artist, Album album) {
+        private async void load_album (
+            Artist artist,
+            Album album
+        ) {
             view.clear_songs ();
 
-            // Todo only look up from library of album
-            Gee.List<Song> songs = yield library_service.get_tracks (artist.library_id, artist.id, album.id);
+            Gee.List<Song> songs =
+                yield library_service.get_tracks (
+                    artist.library_id,
+                    artist.id,
+                    album.id
+                );
 
-            foreach (Song song in songs) {
-                view.add_song (song);
-            }
+            view.show_songs (
+                songs.to_array ()
+            );
         }
 
-        private void play_song (Song song) {
+        private async void search (
+            string query
+        ) {
+            if (query.length == 0) {
+                yield load_artists ();
+                return;
+            }
+
+            Gee.List<SearchResult> results =
+                library_service.search (
+                    query
+                );
+
+            view.show_search_results (
+                results
+            );
+        }
+
+        private void play_song (
+            Song song
+        ) {
             if (song.stream_url == null) {
                 warning (
                     "Cannot play song '%s': no stream URL",
@@ -94,7 +146,9 @@ namespace Vesper.App.Controllers {
                 return;
             }
 
-            play_requested (song);
+            play_requested (
+                song
+            );
         }
     }
 }

@@ -22,6 +22,8 @@ namespace Vesper.Service.Libraries {
 
         public abstract async GLib.Bytes? get_artwork (Song song);
 
+        public abstract Gee.List<SearchResult> search (string query, int limit = 50) throws Error;
+
         public abstract async void sync ();
 
         public signal void library_refresh ();

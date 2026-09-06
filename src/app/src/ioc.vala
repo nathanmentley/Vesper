@@ -53,10 +53,10 @@ namespace Vesper.App {
 
             string data_directory = settings.get_string (database_directory_setting) ?? "./data";
 
-            Database database = new Database (data_directory);
+            Database database = new DatabaseImpl (data_directory);
 
-            PlaylistRepository playlist_repository = new PlaylistRepository (database);
-            LibraryRepository library_repository = new LibraryRepository (database);
+            PlaylistRepository playlist_repository = new PlaylistRepositoryImpl (database);
+            LibraryRepository library_repository = new LibraryRepositoryImpl (database);
 
             SettingDefinition plugin_directory_setting = new SettingDefinition (
                 "general",

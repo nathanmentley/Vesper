@@ -26,6 +26,14 @@ namespace Vesper.App.Views {
     public class BrowserView : BaseView {
         /*
          * -------------------------------------------------------------
+         * Search
+         * -------------------------------------------------------------
+         */
+
+        private SearchEntry search_entry;
+
+        /*
+         * -------------------------------------------------------------
          * Desktop lists
          * -------------------------------------------------------------
          */
@@ -33,6 +41,7 @@ namespace Vesper.App.Views {
         private ListBox desktop_artist_list;
         private ListBox desktop_album_list;
         private ListBox desktop_song_list;
+        private ListBox desktop_search_list;
 
         /*
          * -------------------------------------------------------------
@@ -43,6 +52,7 @@ namespace Vesper.App.Views {
         private ListBox mobile_artist_list;
         private ListBox mobile_album_list;
         private ListBox mobile_song_list;
+        private ListBox mobile_search_list;
 
         /*
          * -------------------------------------------------------------
@@ -51,20 +61,23 @@ namespace Vesper.App.Views {
          */
 
         private Gtk.Box desktop_view;
+        private Gtk.Box desktop_search_view;
+        private Gtk.Stack desktop_stack;
+
         private Adw.NavigationView nav_view;
+        private Adw.NavigationPage mobile_search_page;
 
         /*
          * -------------------------------------------------------------
          * Data
          * -------------------------------------------------------------
-         *
-         * Keep the current data around so either presentation can
-         * be populated from the same state.
          */
 
         private Artist[] artists = {};
         private Album[] albums = {};
         private Song[] songs = {};
+
+        private SearchResult[] search_results = {};
 
         /*
          * Currently selected album.
@@ -76,9 +89,6 @@ namespace Vesper.App.Views {
          * -------------------------------------------------------------
          * Album action buttons
          * -------------------------------------------------------------
-         *
-         * We have one for desktop and one for mobile because the two
-         * presentations have separate headers.
          */
 
         private Button? desktop_add_album_button = null;
@@ -103,12 +113,18 @@ namespace Vesper.App.Views {
             Song song
         );
 
+        public signal void search_requested (
+            string query
+        );
+
         public signal void add_album_to_queue_requested (
             Album album,
             Song[] songs
         );
 
-        public BrowserView (Gtk.Window parent_window) {
+        public BrowserView (
+            Gtk.Window parent_window
+        ) {
             base (parent_window);
 
             hexpand = true;
@@ -127,26 +143,47 @@ namespace Vesper.App.Views {
             desktop_artist_list = create_list ();
             desktop_album_list = create_list ();
             desktop_song_list = create_list ();
+            desktop_search_list = create_list ();
 
             mobile_artist_list = create_list ();
             mobile_album_list = create_list ();
             mobile_song_list = create_list ();
+            mobile_search_list = create_list ();
 
             /*
              * ---------------------------------------------------------
-             * Build desktop
+             * Build views
              * ---------------------------------------------------------
              */
 
             build_desktop_view ();
+            build_desktop_search_view ();
+            build_mobile_view ();
 
             /*
              * ---------------------------------------------------------
-             * Build mobile
+             * Desktop stack
              * ---------------------------------------------------------
              */
 
-            build_mobile_view ();
+            desktop_stack =
+                new Gtk.Stack ();
+
+            desktop_stack.hexpand = true;
+            desktop_stack.vexpand = true;
+
+            desktop_stack.add_named (
+                desktop_view,
+                "browse"
+            );
+
+            desktop_stack.add_named (
+                desktop_search_view,
+                "search"
+            );
+
+            desktop_stack.visible_child_name =
+                "browse";
 
             /*
              * ---------------------------------------------------------
@@ -160,17 +197,9 @@ namespace Vesper.App.Views {
             breakpoint_bin.hexpand = true;
             breakpoint_bin.vexpand = true;
 
-            /*
-             * Desktop is the normal/default presentation.
-             */
-
             breakpoint_bin.set_child (
-                desktop_view
+                desktop_stack
             );
-
-            /*
-             * Switch to the NavigationView on narrow screens.
-             */
 
             var breakpoint =
                 new Adw.Breakpoint (
@@ -189,8 +218,75 @@ namespace Vesper.App.Views {
                 breakpoint
             );
 
-            append (
+            /*
+             * ---------------------------------------------------------
+             * Search entry
+             * ---------------------------------------------------------
+             */
+
+            search_entry =
+                new SearchEntry ();
+
+            search_entry.hexpand = true;
+
+            search_entry.placeholder_text =
+                "Search your music";
+
+            search_entry.search_delay =
+                250;
+
+            search_entry.activate.connect (() => {
+                search_requested (
+                    search_entry.text
+                );
+            });
+
+            search_entry.search_changed.connect (() => {
+                if (search_entry.text.strip ().length == 0) {
+                    show_browse ();
+                }
+            });
+
+            var search_header =
+                new Gtk.Box (
+                    Orientation.HORIZONTAL,
+                    0
+                );
+
+            search_header.margin_top = 8;
+            search_header.margin_bottom = 8;
+            search_header.margin_start = 12;
+            search_header.margin_end = 12;
+
+            search_header.append (
+                search_entry
+            );
+
+            /*
+             * ---------------------------------------------------------
+             * Root layout
+             * ---------------------------------------------------------
+             */
+
+            var root_view =
+                new Gtk.Box (
+                    Orientation.VERTICAL,
+                    0
+                );
+
+            root_view.hexpand = true;
+            root_view.vexpand = true;
+
+            root_view.append (
+                search_header
+            );
+
+            root_view.append (
                 breakpoint_bin
+            );
+
+            append (
+                root_view
             );
 
             update_album_action_buttons ();
@@ -234,8 +330,6 @@ namespace Vesper.App.Views {
 
             /*
              * Songs
-             *
-             * This column gets the "Add album to queue" action.
              */
 
             var song_column =
@@ -274,6 +368,68 @@ namespace Vesper.App.Views {
             );
         }
 
+        private void build_desktop_search_view () {
+            desktop_search_view =
+                new Gtk.Box (
+                    Orientation.VERTICAL,
+                    0
+                );
+
+            desktop_search_view.hexpand = true;
+            desktop_search_view.vexpand = true;
+
+            var header =
+                new Gtk.Box (
+                    Orientation.HORIZONTAL,
+                    6
+                );
+
+            header.margin_top = 8;
+            header.margin_bottom = 8;
+            header.margin_start = 12;
+            header.margin_end = 12;
+
+            var label =
+                new Gtk.Label (
+                    "Search Results"
+                );
+
+            label.halign = Align.START;
+            label.hexpand = true;
+
+            label.add_css_class (
+                "heading"
+            );
+
+            header.append (
+                label
+            );
+
+            desktop_search_view.append (
+                header
+            );
+
+            var scroller =
+                new Gtk.ScrolledWindow ();
+
+            scroller.hexpand = true;
+            scroller.vexpand = true;
+
+            scroller.hscrollbar_policy =
+                PolicyType.NEVER;
+
+            scroller.vscrollbar_policy =
+                PolicyType.AUTOMATIC;
+
+            scroller.set_child (
+                desktop_search_list
+            );
+
+            desktop_search_view.append (
+                scroller
+            );
+        }
+
         private Gtk.Box create_desktop_column (
             string title,
             ListBox list,
@@ -287,12 +443,6 @@ namespace Vesper.App.Views {
 
             column.hexpand = true;
             column.vexpand = true;
-
-            /*
-             * ---------------------------------------------------------
-             * Header
-             * ---------------------------------------------------------
-             */
 
             var header =
                 new Gtk.Box (
@@ -321,16 +471,6 @@ namespace Vesper.App.Views {
                 label
             );
 
-            /*
-             * ---------------------------------------------------------
-             * Album action
-             * ---------------------------------------------------------
-             *
-             * This is deliberately in the Songs header, rather than
-             * the Albums header. That makes it visually clear that the
-             * action applies to the album whose songs are being shown.
-             */
-
             if (show_album_action) {
                 desktop_add_album_button =
                     create_add_album_button ();
@@ -343,12 +483,6 @@ namespace Vesper.App.Views {
             column.append (
                 header
             );
-
-            /*
-             * ---------------------------------------------------------
-             * Scrolling list
-             * ---------------------------------------------------------
-             */
 
             var scroller =
                 new Gtk.ScrolledWindow ();
@@ -421,8 +555,6 @@ namespace Vesper.App.Views {
 
             /*
              * Songs
-             *
-             * Give this page an action button too.
              */
 
             var song_page =
@@ -432,6 +564,13 @@ namespace Vesper.App.Views {
                     true,
                     true
                 );
+
+            /*
+             * Search results
+             */
+
+            mobile_search_page =
+                create_mobile_search_page ();
 
             nav_view.add (
                 artist_page
@@ -445,6 +584,10 @@ namespace Vesper.App.Views {
                 song_page
             );
 
+            nav_view.add (
+                mobile_search_page
+            );
+
             /*
              * Start at Artists.
              */
@@ -452,6 +595,64 @@ namespace Vesper.App.Views {
             nav_view.push (
                 artist_page
             );
+        }
+
+        private Adw.NavigationPage create_mobile_search_page () {
+            var toolbar =
+                new Adw.ToolbarView ();
+
+            toolbar.hexpand = true;
+            toolbar.vexpand = true;
+
+            /*
+             * Don't show window controls here.
+             *
+             * NavigationView handles navigation independently.
+             */
+
+            var header =
+                new Adw.HeaderBar ();
+
+            header.show_start_title_buttons = false;
+            header.show_end_title_buttons = false;
+
+            toolbar.add_top_bar (
+                header
+            );
+
+            var scroller =
+                new Gtk.ScrolledWindow ();
+
+            scroller.hexpand = true;
+            scroller.vexpand = true;
+
+            scroller.hscrollbar_policy =
+                PolicyType.NEVER;
+
+            scroller.vscrollbar_policy =
+                PolicyType.AUTOMATIC;
+
+            mobile_search_list.margin_top = 6;
+            mobile_search_list.margin_bottom = 6;
+
+            scroller.set_child (
+                mobile_search_list
+            );
+
+            toolbar.set_content (
+                scroller
+            );
+
+            var page =
+                new Adw.NavigationPage (
+                    toolbar,
+                    "Search Results"
+                );
+
+            page.tag =
+                "Search Results";
+
+            return page;
         }
 
         private Adw.NavigationPage create_mobile_page (
@@ -466,26 +667,12 @@ namespace Vesper.App.Views {
             toolbar.hexpand = true;
             toolbar.vexpand = true;
 
-            /*
-             * ---------------------------------------------------------
-             * Header
-             * ---------------------------------------------------------
-             */
-
             if (show_header) {
                 var header =
                     new Adw.HeaderBar ();
 
-                /*
-                 * Don't show window decoration buttons.
-                 */
-
                 header.show_start_title_buttons = false;
                 header.show_end_title_buttons = false;
-
-                /*
-                 * Songs gets an "Add album" action.
-                 */
 
                 if (show_album_action) {
                     mobile_add_album_button =
@@ -500,12 +687,6 @@ namespace Vesper.App.Views {
                     header
                 );
             }
-
-            /*
-             * ---------------------------------------------------------
-             * Scroller
-             * ---------------------------------------------------------
-             */
 
             var scroller =
                 new Gtk.ScrolledWindow ();
@@ -530,12 +711,6 @@ namespace Vesper.App.Views {
                 scroller
             );
 
-            /*
-             * ---------------------------------------------------------
-             * Navigation page
-             * ---------------------------------------------------------
-             */
-
             var page =
                 new Adw.NavigationPage (
                     toolbar,
@@ -546,6 +721,211 @@ namespace Vesper.App.Views {
                 title;
 
             return page;
+        }
+
+        /*
+         * =============================================================
+         * Search
+         * =============================================================
+         */
+
+        public void show_search_results (
+            Gee.List<SearchResult> results
+        ) {
+            search_results =
+                results.to_array ();
+
+            clear_list (
+                desktop_search_list
+            );
+
+            clear_list (
+                mobile_search_list
+            );
+
+            foreach (SearchResult result in search_results) {
+                add_search_result (
+                    result
+                );
+            }
+
+            /*
+             * Desktop
+             */
+
+            desktop_stack.visible_child_name =
+                "search";
+
+            /*
+             * Mobile
+             */
+
+            if (
+                nav_view.get_visible_page () !=
+                mobile_search_page
+            ) {
+                nav_view.push (
+                    mobile_search_page
+                );
+            }
+        }
+
+        private void add_search_result (
+            SearchResult result
+        ) {
+            /*
+             * Desktop
+             */
+
+            desktop_search_list.append (
+                create_search_result_row (
+                    result
+                )
+            );
+
+            /*
+             * Mobile
+             */
+
+            mobile_search_list.append (
+                create_search_result_row (
+                    result
+                )
+            );
+        }
+
+        private Gtk.ListBoxRow create_search_result_row (
+            SearchResult result
+        ) {
+            var row =
+                new Gtk.ListBoxRow ();
+
+            row.activatable = true;
+            row.selectable = false;
+
+            var box =
+                new Gtk.Box (
+                    Orientation.VERTICAL,
+                    2
+                );
+
+            box.margin_top = 8;
+            box.margin_bottom = 8;
+            box.margin_start = 12;
+            box.margin_end = 12;
+
+            /*
+             * Song title
+             */
+
+            var title =
+                new Gtk.Label (
+                    result.song.title
+                );
+
+            title.halign = Align.START;
+            title.hexpand = true;
+
+            title.ellipsize =
+                Pango.EllipsizeMode.END;
+
+            title.max_width_chars = 80;
+
+            title.add_css_class (
+                "heading"
+            );
+
+            /*
+             * Artist / album
+             */
+
+            var subtitle =
+                new Gtk.Label (
+                    "%s • %s".printf (
+                        result.artist.name,
+                        result.song.album.name
+                    )
+                );
+
+            subtitle.halign = Align.START;
+            subtitle.hexpand = true;
+
+            subtitle.ellipsize =
+                Pango.EllipsizeMode.END;
+
+            subtitle.max_width_chars = 80;
+
+            subtitle.add_css_class (
+                "dim-label"
+            );
+
+            box.append (
+                title
+            );
+
+            box.append (
+                subtitle
+            );
+
+            row.set_child (
+                box
+            );
+
+            /*
+             * Explicitly handle clicks.
+             */
+
+            var gesture =
+                new Gtk.GestureClick ();
+
+            gesture.released.connect (
+                (n_press, x, y) => {
+                    song_selected (
+                        result.song
+                    );
+                }
+            );
+
+            row.add_controller (
+                gesture
+            );
+
+            return row;
+        }
+
+        /*
+         * =============================================================
+         * Browse/Search mode
+         * =============================================================
+         */
+
+        public void show_browse () {
+            search_results = {};
+
+            clear_list (
+                desktop_search_list
+            );
+
+            clear_list (
+                mobile_search_list
+            );
+
+            desktop_stack.visible_child_name =
+                "browse";
+
+            /*
+             * Return mobile navigation to Artists when coming out
+             * of search.
+             */
+
+            if (
+                nav_view.get_visible_page () ==
+                mobile_search_page
+            ) {
+                nav_view.pop_to_tag (
+                    "Artists"
+                );
+            }
         }
 
         /*
@@ -576,11 +956,6 @@ namespace Vesper.App.Views {
         }
 
         private void add_current_album_to_queue () {
-            /*
-             * There is nothing to add if an album hasn't been selected
-             * or its songs haven't loaded yet.
-             */
-
             if (current_album == null) {
                 return;
             }
@@ -643,6 +1018,7 @@ namespace Vesper.App.Views {
             artists = {};
             albums = {};
             songs = {};
+            search_results = {};
 
             current_album = null;
 
@@ -659,6 +1035,10 @@ namespace Vesper.App.Views {
             );
 
             clear_list (
+                desktop_search_list
+            );
+
+            clear_list (
                 mobile_artist_list
             );
 
@@ -668,6 +1048,10 @@ namespace Vesper.App.Views {
 
             clear_list (
                 mobile_song_list
+            );
+
+            clear_list (
+                mobile_search_list
             );
 
             update_album_action_buttons ();
@@ -722,7 +1106,7 @@ namespace Vesper.App.Views {
                 );
 
             desktop_row.selected.connect (
-                (selected_artist) => {
+                selected_artist => {
                     handle_artist_click (
                         selected_artist
                     );
@@ -743,7 +1127,7 @@ namespace Vesper.App.Views {
                 );
 
             mobile_row.selected.connect (
-                (selected_artist) => {
+                selected_artist => {
                     handle_artist_click (
                         selected_artist
                     );
@@ -758,6 +1142,8 @@ namespace Vesper.App.Views {
         public void show_artists (
             Artist[] artists
         ) {
+            show_browse ();
+
             clear_artists ();
 
             this.artists =
@@ -802,7 +1188,7 @@ namespace Vesper.App.Views {
                 );
 
             desktop_row.selected.connect (
-                (selected_album) => {
+                selected_album => {
                     handle_album_click (
                         artist,
                         selected_album
@@ -824,7 +1210,7 @@ namespace Vesper.App.Views {
                 );
 
             mobile_row.selected.connect (
-                (selected_album) => {
+                selected_album => {
                     handle_album_click (
                         artist,
                         selected_album
@@ -877,13 +1263,6 @@ namespace Vesper.App.Views {
         public void add_song (
             Song song
         ) {
-            /*
-             * Keep the backing array synchronized with the rows.
-             *
-             * This is important because the Navidrome controller loads
-             * songs incrementally through this method.
-             */
-
             songs += song;
 
             /*
@@ -896,7 +1275,7 @@ namespace Vesper.App.Views {
                 );
 
             desktop_row.selected.connect (
-                (selected_song) => {
+                selected_song => {
                     song_selected (
                         selected_song
                     );
@@ -917,7 +1296,7 @@ namespace Vesper.App.Views {
                 );
 
             mobile_row.selected.connect (
-                (selected_song) => {
+                selected_song => {
                     song_selected (
                         selected_song
                     );
@@ -928,11 +1307,6 @@ namespace Vesper.App.Views {
                 mobile_row
             );
 
-            /*
-             * The album action becomes available as soon as at least
-             * one song has arrived.
-             */
-
             update_album_action_buttons ();
         }
 
@@ -940,12 +1314,6 @@ namespace Vesper.App.Views {
             Song[] songs
         ) {
             clear_songs ();
-
-            /*
-             * Store the complete collection here, then create rows
-             * directly rather than calling add_song(), since add_song()
-             * also updates the backing collection.
-             */
 
             this.songs =
                 songs;
@@ -972,7 +1340,7 @@ namespace Vesper.App.Views {
                 );
 
             desktop_row.selected.connect (
-                (selected_song) => {
+                selected_song => {
                     song_selected (
                         selected_song
                     );
@@ -993,7 +1361,7 @@ namespace Vesper.App.Views {
                 );
 
             mobile_row.selected.connect (
-                (selected_song) => {
+                selected_song => {
                     song_selected (
                         selected_song
                     );
@@ -1014,19 +1382,9 @@ namespace Vesper.App.Views {
         private void handle_artist_click (
             Artist artist
         ) {
-            /*
-             * Tell the controller that the artist changed.
-             */
-
             artist_selected (
                 artist
             );
-
-            /*
-             * Navigation only affects the mobile presentation.
-             *
-             * On desktop the Albums column is already visible.
-             */
 
             var album_page =
                 nav_view.find_page (
@@ -1050,32 +1408,15 @@ namespace Vesper.App.Views {
             Artist artist,
             Album album
         ) {
-            /*
-             * Remember which album owns the currently displayed songs.
-             */
-
             current_album =
                 album;
 
-            /*
-             * Clear the old songs immediately. This also disables the
-             * Add Album button while the new album is loading.
-             */
-
             clear_songs ();
-
-            /*
-             * Tell the controller to load the new album.
-             */
 
             album_selected (
                 artist,
                 album
             );
-
-            /*
-             * Navigation only affects mobile.
-             */
 
             var song_page =
                 nav_view.find_page (

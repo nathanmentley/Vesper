@@ -15,12 +15,27 @@
  * along with this program.  If not, see <https://gnu.org>.
  */
 
-namespace Vesper.Data {
-    public interface Database : Object {
-        public abstract Sqlite.Database connection { get; }
-        public abstract void exec (string sql) throws Error;
-        public abstract void begin_transaction () throws Error;
-        public abstract void commit () throws Error;
-        public abstract void rollback () throws Error;
+using GLib;
+
+namespace Vesper.Core.Models {
+    public sealed class SearchResult : Object {
+        public string library_id { get; construct; }
+        public Song song { get; construct; }
+        public Artist artist { get; construct; }
+        public double rank { get; construct; }
+
+        public SearchResult (
+            string library_id,
+            Song song,
+            Artist artist,
+            double rank
+        ) {
+            Object (
+                library_id: library_id,
+                song: song,
+                artist: artist,
+                rank: rank
+            );
+        }
     }
 }

@@ -156,6 +156,10 @@ namespace Vesper.Service.Libraries {
             return null;
         }
 
+        public Gee.List<SearchResult> search (string query, int limit = 50) throws Error {
+            return library_repository.search (query, limit);
+        }
+
         private bool stale_check (string music_library_id) {
             Library? library = library_repository.get_library (music_library_id);
 

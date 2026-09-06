@@ -14,9 +14,12 @@
 # along with Vesper.  If not, see <https://gnu.org>.
 
 data_sources = [
+  'src/database_impl.vala',
   'src/database.vala',
+  'src/library_repository_impl.vala',
   'src/library_repository.vala',
   'src/migrations.vala',
+  'src/playlist_repository_impl.vala',
   'src/playlist_repository.vala',
 ]
 
