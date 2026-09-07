@@ -53,6 +53,20 @@ namespace Vesper.App.Tests {
             var loaded_album = repository.get_albums (artist.id)[0];
             var loaded_song = repository.get_tracks (album.id)[0];
 
+            assert (loaded_artist.added_at != null);
+            assert (loaded_album.added_at != null);
+            assert (loaded_song.added_at != null);
+
+            int64 artist_added_at = loaded_artist.added_at;
+            int64 album_added_at = loaded_album.added_at;
+            int64 song_added_at = loaded_song.added_at;
+            repository.save_artist ("library-1", artist);
+            repository.save_album ("library-1", artist.id, album);
+            repository.save_song ("library-1", artist.id, song);
+            assert (repository.get_artists ("library-1")[0].added_at == artist_added_at);
+            assert (repository.get_albums (artist.id)[0].added_at == album_added_at);
+            assert (repository.get_tracks (album.id)[0].added_at == song_added_at);
+
             assert (loaded_artist.genres.size == 2);
             assert (loaded_album.genres.size == 1);
             assert (loaded_album.genres[0].name == "Political");

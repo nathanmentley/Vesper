@@ -66,9 +66,10 @@ namespace Vesper.Data {
                     id,
                     library_id,
                     name,
-                    musicbrainz_artist_id
+                    musicbrainz_artist_id,
+                    added_at
                 )
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, COALESCE(?, strftime('%s', 'now')))
                 ON CONFLICT(id) DO UPDATE SET
                     library_id = excluded.library_id,
                     name = excluded.name,
@@ -79,6 +80,7 @@ namespace Vesper.Data {
             statement.bind_text (2, library_id);
             statement.bind_text (3, artist.name);
             bind_text (statement, 4, artist.musicbrainz_artist_id);
+            bind_int64 (statement, 5, artist.added_at);
 
             step_done (statement);
             save_artist_genres (artist.id, artist.genres);
@@ -98,9 +100,10 @@ namespace Vesper.Data {
                     year,
                     cover,
                     musicbrainz_release_id,
-                    musicbrainz_release_group_id
+                    musicbrainz_release_group_id,
+                    added_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, strftime('%s', 'now')))
                 ON CONFLICT(id) DO UPDATE SET
                     library_id = excluded.library_id,
                     artist_id = excluded.artist_id,
@@ -130,6 +133,7 @@ namespace Vesper.Data {
 
             bind_text (statement, 7, album.musicbrainz_release_id);
             bind_text (statement, 8, album.musicbrainz_release_group_id);
+            bind_int64 (statement, 9, album.added_at);
 
             step_done (statement);
             save_album_genres (album.id, album.genres);
@@ -160,9 +164,10 @@ namespace Vesper.Data {
                     content_type,
                     file_suffix,
                     bpm,
-                    musicbrainz_recording_id
+                    musicbrainz_recording_id,
+                    added_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, strftime('%s', 'now')))
                 ON CONFLICT(id) DO UPDATE SET
                     library_id = excluded.library_id,
                     artist_id = excluded.artist_id,
@@ -204,6 +209,7 @@ namespace Vesper.Data {
             bind_text (statement, 17, song.file_suffix);
             bind_int (statement, 18, song.bpm);
             bind_text (statement, 19, song.musicbrainz_recording_id);
+            bind_int64 (statement, 20, song.added_at);
 
             step_done (statement);
             save_song_genres (song.id, song.genres);
@@ -295,7 +301,8 @@ namespace Vesper.Data {
                     id,
                     name,
                     library_id,
-                    musicbrainz_artist_id
+                    musicbrainz_artist_id,
+                    added_at
                 FROM artists
                 WHERE library_id = ?
                 ORDER BY name;
@@ -310,7 +317,8 @@ namespace Vesper.Data {
                         statement.column_text (1),
                         statement.column_text (2),
                         get_artist_genres (statement.column_text (0)),
-                        nullable_text (statement, 3)
+                        nullable_text (statement, 3),
+                        nullable_int64 (statement, 4)
                     )
                 );
             }
@@ -330,7 +338,8 @@ namespace Vesper.Data {
                     cover,
                     year,
                     musicbrainz_release_id,
-                    musicbrainz_release_group_id
+                    musicbrainz_release_group_id,
+                    added_at
                 FROM albums
                 WHERE artist_id = ?
                 ORDER BY year ASC, name ASC;
@@ -358,7 +367,8 @@ namespace Vesper.Data {
                         year,
                         get_album_genres (statement.column_text (0)),
                         nullable_text (statement, 4),
-                        nullable_text (statement, 5)
+                        nullable_text (statement, 5),
+                        nullable_int64 (statement, 6)
                     )
                 );
             }
@@ -378,7 +388,8 @@ namespace Vesper.Data {
                     cover,
                     year,
                     musicbrainz_release_id,
-                    musicbrainz_release_group_id
+                    musicbrainz_release_group_id,
+                    added_at
                 FROM albums
                 WHERE id = ?
             """);
@@ -407,7 +418,8 @@ namespace Vesper.Data {
                 year,
                 get_album_genres (album_statement.column_text (0)),
                 nullable_text (album_statement, 4),
-                nullable_text (album_statement, 5)
+                nullable_text (album_statement, 5),
+                nullable_int64 (album_statement, 6)
             );
 
             var statement = prepare ("""
@@ -427,7 +439,8 @@ namespace Vesper.Data {
                     content_type,
                     file_suffix,
                     bpm,
-                    musicbrainz_recording_id
+                    musicbrainz_recording_id,
+                    added_at
                 FROM songs
                 WHERE album_id = ?
                 ORDER BY track_number ASC, title ASC;
@@ -455,7 +468,8 @@ namespace Vesper.Data {
                         nullable_text (statement, 13),
                         nullable_int (statement, 14),
                         nullable_text (statement, 15),
-                        get_song_genres (statement.column_text (0))
+                        get_song_genres (statement.column_text (0)),
+                        nullable_int64 (statement, 16)
                     )
                 );
             }
@@ -490,7 +504,9 @@ namespace Vesper.Data {
                     s.bpm,
                     s.musicbrainz_recording_id,
                     a.musicbrainz_release_id,
-                    a.musicbrainz_release_group_id
+                    a.musicbrainz_release_group_id,
+                    a.added_at,
+                    s.added_at
                 FROM songs s
                 JOIN albums a ON s.album_id = a.id
                 WHERE s.id = ?;
@@ -520,7 +536,8 @@ namespace Vesper.Data {
                 year,
                 get_album_genres (statement.column_text (3)),
                 nullable_text (statement, 20),
-                nullable_text (statement, 21)
+                nullable_text (statement, 21),
+                nullable_int64 (statement, 22)
             );
 
             return new Song (
@@ -541,7 +558,8 @@ namespace Vesper.Data {
                 nullable_text (statement, 17),
                 nullable_int (statement, 18),
                 nullable_text (statement, 19),
-                get_song_genres (statement.column_text (0))
+                get_song_genres (statement.column_text (0)),
+                nullable_int64 (statement, 23)
             );
         }
 
@@ -693,6 +711,16 @@ namespace Vesper.Data {
             } else {
                 statement.bind_null (index);
             }
+        }
+
+        private int64? nullable_int64 (
+            Sqlite.Statement statement,
+            int index
+        ) {
+            if (statement.column_type (index) == Sqlite.NULL) {
+                return null;
+            }
+            return statement.column_int64 (index);
         }
 
         private void bind_text (

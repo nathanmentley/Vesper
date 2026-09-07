@@ -20,7 +20,7 @@ using Sqlite;
 
 namespace Vesper.Data {
     public class Migration : Object {
-        private const int CURRENT_VERSION = 4;
+        private const int CURRENT_VERSION = 5;
 
         public static void migrate (Sqlite.Database db) throws Error {
             int version = get_version (db);
@@ -32,25 +32,34 @@ namespace Vesper.Data {
                         migrate_v2 (db);
                         migrate_v3 (db);
                         migrate_v4 (db);
-                        version = 4;
+                        migrate_v5 (db);
+                        version = 5;
                         break;
 
                     case 1:
                         migrate_v2 (db);
                         migrate_v3 (db);
                         migrate_v4 (db);
-                        version = 4;
+                        migrate_v5 (db);
+                        version = 5;
                         break;
 
                     case 2:
                         migrate_v3 (db);
                         migrate_v4 (db);
-                        version = 4;
+                        migrate_v5 (db);
+                        version = 5;
                         break;
 
                     case 3:
                         migrate_v4 (db);
-                        version = 4;
+                        migrate_v5 (db);
+                        version = 5;
+                        break;
+
+                    case 4:
+                        migrate_v5 (db);
+                        version = 5;
                         break;
 
                     default:
@@ -406,6 +415,24 @@ namespace Vesper.Data {
                 """);
 
                 set_version (db, 4);
+                exec (db, "COMMIT;");
+            } catch (Error e) {
+                exec (db, "ROLLBACK;");
+                throw e;
+            }
+        }
+
+        private static void migrate_v5 (
+            Sqlite.Database db
+        ) throws Error {
+            exec (db, "BEGIN TRANSACTION;");
+
+            try {
+                exec (db, "ALTER TABLE artists ADD COLUMN added_at INTEGER;");
+                exec (db, "ALTER TABLE albums ADD COLUMN added_at INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN added_at INTEGER;");
+
+                set_version (db, 5);
                 exec (db, "COMMIT;");
             } catch (Error e) {
                 exec (db, "ROLLBACK;");

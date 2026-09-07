@@ -24,6 +24,7 @@ namespace Vesper.Core.Models {
         public string name { get; construct; }
         public string? cover { get; construct; }
         public string? year { get; construct; }
+        public int64? added_at { get; private set; }
         public Gee.List<Genre> genres { get; private set; }
         public string? musicbrainz_release_id { get; construct; }
         public string? musicbrainz_release_group_id { get; construct; }
@@ -35,7 +36,8 @@ namespace Vesper.Core.Models {
             string? year = null,
             Gee.List<Genre>? genres = null,
             string? musicbrainz_release_id = null,
-            string? musicbrainz_release_group_id = null
+            string? musicbrainz_release_group_id = null,
+            int64? added_at = null
         ) {
             Object (
                 id: id,
@@ -45,6 +47,7 @@ namespace Vesper.Core.Models {
                 musicbrainz_release_id: musicbrainz_release_id,
                 musicbrainz_release_group_id: musicbrainz_release_group_id
             );
+            this.added_at = added_at;
             this.genres = genres ?? new Gee.ArrayList<Genre> ();
         }
 
