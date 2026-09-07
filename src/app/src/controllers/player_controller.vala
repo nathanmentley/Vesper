@@ -57,10 +57,12 @@ namespace Vesper.App.Controllers {
 
             this.music = music;
             this.user_state = user_state;
+            this.view.set_favorite_available (false);
 
             music.state_changed.connect (status => {
                 if (status == PlaybackState.FINISHED) {
                     record_finished_play ();
+                    view.set_playing (false);
                     stop_position_timer ();
                     set_status ("Finished");
                     song_finished ();
@@ -78,6 +80,8 @@ namespace Vesper.App.Controllers {
             view.previous_requested.connect (() => previous_requested ());
 
             view.next_requested.connect (() => next_requested ());
+
+            view.favorite_requested.connect (toggle_favorite);
 
             view.seek_requested.connect (seek);
 
@@ -133,14 +137,17 @@ namespace Vesper.App.Controllers {
             }
 
             set_status ("Playing");
+            view.set_playing (true);
 
             start_position_timer ();
+            update_favorite_state (song);
         }
 
         public void stop () {
             music.stop_player ();
 
             stop_position_timer ();
+            view.set_playing (false);
 
             view.set_position (0, 0);
 
@@ -151,6 +158,7 @@ namespace Vesper.App.Controllers {
             music.start_player ();
 
             set_status ("Playing");
+            view.set_playing (true);
 
             start_position_timer ();
         }
@@ -159,6 +167,46 @@ namespace Vesper.App.Controllers {
             music.pause_player ();
 
             set_status ("Paused");
+            view.set_playing (false);
+        }
+
+        private void toggle_favorite () {
+            if (current_song == null) {
+                return;
+            }
+
+            bool previous_state;
+
+            try {
+                previous_state = user_state.is_favorite (current_song.id);
+            } catch (Error e) {
+                set_error ("Failed to read favorite state: " + e.message);
+                return;
+            }
+
+            try {
+                if (previous_state) {
+                    user_state.unfavorite (current_song.id);
+                } else {
+                    user_state.favorite (current_song.id);
+                }
+
+                view.set_favorite_state (!previous_state);
+            } catch (Error e) {
+                view.set_favorite_state (previous_state);
+                set_error ("Failed to update favorite: " + e.message);
+            }
+        }
+
+        private void update_favorite_state (Song song) {
+            try {
+                bool favorite = user_state.is_favorite (song.id);
+                view.set_favorite_state (favorite);
+                view.set_favorite_available (true);
+            } catch (Error e) {
+                view.set_favorite_available (false);
+                set_error ("Failed to read favorite state: " + e.message);
+            }
         }
 
         private void record_finished_play () {

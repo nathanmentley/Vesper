@@ -36,6 +36,8 @@ namespace Vesper.App.Views {
         public signal void previous_requested ();
         public signal void next_requested ();
 
+        public signal void favorite_requested ();
+
         public signal void seek_requested (
             int64 position_ns
         );
@@ -73,6 +75,7 @@ namespace Vesper.App.Views {
         private Button pause_button;
         private Button stop_button;
         private Button next_button;
+        private Button favorite_button;
 
         private Button volume_button;
 
@@ -225,6 +228,8 @@ namespace Vesper.App.Views {
                 "circular"
             );
 
+            set_playing (false);
+
             /*
              * ---------------------------------------------------------
              * Stop
@@ -256,6 +261,22 @@ namespace Vesper.App.Views {
             next_button.add_css_class (
                 "circular"
             );
+
+            favorite_button =
+                create_icon_button (
+                    "star-new-symbolic",
+                    "Add to favorites"
+                );
+
+            favorite_button.add_css_class (
+                "flat"
+            );
+
+            favorite_button.add_css_class (
+                "circular"
+            );
+
+            favorite_button.sensitive = false;
 
             /*
              * ---------------------------------------------------------
@@ -309,6 +330,10 @@ namespace Vesper.App.Views {
 
             controls.append (
                 next_button
+            );
+
+            controls.append (
+                favorite_button
             );
 
             controls.append (
@@ -594,6 +619,10 @@ namespace Vesper.App.Views {
                 next_requested ();
             });
 
+            favorite_button.clicked.connect (() => {
+                favorite_requested ();
+            });
+
             /*
              * ---------------------------------------------------------
              * Shuffle
@@ -659,6 +688,30 @@ namespace Vesper.App.Views {
              *
              * Kept for compatibility with the existing controller.
              */
+        }
+
+        public void set_favorite_state (
+            bool favorite
+        ) {
+            favorite_button.icon_name = favorite
+                ? "starred-symbolic"
+                : "star-new-symbolic";
+            favorite_button.tooltip_text = favorite
+                ? "Remove from favorites"
+                : "Add to favorites";
+        }
+
+        public void set_favorite_available (
+            bool available
+        ) {
+            favorite_button.sensitive = available;
+        }
+
+        public void set_playing (
+            bool playing
+        ) {
+            play_button.visible = !playing;
+            pause_button.visible = playing;
         }
 
         /*
