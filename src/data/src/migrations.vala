@@ -25,15 +25,17 @@ namespace Vesper.Data {
         public static void migrate (Sqlite.Database db) throws Error {
             int version = get_version (db);
 
-            if (version == 0) {
-                migrate_v1 (db);
-                return;
-            }
-
-            if (version != CURRENT_VERSION) {
-                throw new IOError.FAILED (
-                    "Unknown database version: %d".printf (version)
-                );
+            while (version < CURRENT_VERSION) {
+                switch (version) {
+                    case 0:
+                        migrate_v1 (db);
+                        version = 1;
+                        break;
+                    default:
+                        throw new IOError.FAILED (
+                            "Unknown database version: %d".printf (version)
+                        );
+                }
             }
         }
 

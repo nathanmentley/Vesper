@@ -320,6 +320,7 @@ namespace Vesper.Plugins.Subsonic {
                                             build_stream_url (song_id),
                                             int.parse (track_number_str ?? "0"),
                                             album,
+                                            new Artist("", "", ""),
                                             parse_int (song->get_prop ("duration")),
                                             parse_int (song->get_prop ("discNumber")),
                                             parse_int (song->get_prop ("year")),

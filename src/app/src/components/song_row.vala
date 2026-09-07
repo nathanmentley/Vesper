@@ -20,13 +20,20 @@ using Gtk;
 using Vesper.Core.Models;
 
 namespace Vesper.App.Components {
-    public class SongRow : Button {
+    public class SongRow : Box {
         public Song song { get; construct; }
 
         public signal void selected (Song song);
+        public signal void add_to_playlist_requested (Song song);
+
+        private Button play_button;
 
         public SongRow (Song song) {
-            Object (song: song);
+            Object (
+                orientation: Orientation.HORIZONTAL,
+                spacing: 0,
+                song: song
+            );
 
             build_ui ();
 
@@ -34,11 +41,14 @@ namespace Vesper.App.Components {
         }
 
         private void build_ui () {
-            halign = Align.FILL;
             hexpand = true;
-            has_frame = false;
 
             tooltip_text = song.title;
+
+            play_button = new Button ();
+            play_button.hexpand = true;
+            play_button.halign = Align.FILL;
+            play_button.has_frame = false;
 
             Box row = new Box (Orientation.HORIZONTAL, 12);
             row.set_margin_top (8);
@@ -46,7 +56,7 @@ namespace Vesper.App.Components {
             row.set_margin_start (12);
             row.set_margin_end (12);
 
-            Image icon = new Image.from_icon_name ("audio-x-generic-symbolic");
+            Image icon = new Image.from_icon_name ("media-playback-start-symbolic");
             icon.pixel_size = 20;
 
             Label label = new Label (song.title);
@@ -54,18 +64,22 @@ namespace Vesper.App.Components {
             label.hexpand = true;
             label.ellipsize = Pango.EllipsizeMode.END;
 
-            Image add_icon = new Image.from_icon_name ("list-add-symbolic");
-            add_icon.add_css_class ("dim-label");
-
             row.append (icon);
             row.append (label);
-            row.append (add_icon);
+            play_button.set_child (row);
 
-            set_child (row);
+            append (play_button);
+
+            var add_button = new Button ();
+            add_button.icon_name = "list-add-symbolic";
+            add_button.tooltip_text = "Add to playlist";
+            add_button.add_css_class ("flat");
+            add_button.clicked.connect (() => add_to_playlist_requested (song));
+            append (add_button);
         }
 
         private void connect_signals () {
-            clicked.connect (() => selected (song));
+            play_button.clicked.connect (() => selected (song));
         }
     }
 }

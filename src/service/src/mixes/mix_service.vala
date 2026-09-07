@@ -18,16 +18,11 @@
 using Gee;
 using Vesper.Core.Models;
 
-namespace Vesper.Core.Plugins {
-    public interface MusicLibrary : Plugin, Object {
-        public abstract string get_id ();
-
-        public abstract async Gee.List<Artist> get_artists ();
-
-        public abstract async Gee.List<Album> get_albums (string artist_id);
-
-        public abstract async Gee.List<Song> get_tracks (string album_id);
-
-        public abstract async GLib.Bytes? get_artwork (Song song);
+namespace Vesper.Service.Mixes {
+    public interface MixService : Object {
+        public abstract async Gee.List<Song> get_mix_songs (
+            MixType type,
+            int limit = 100
+        ) throws Error;
     }
 }

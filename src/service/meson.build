@@ -14,6 +14,8 @@
 # along with Vesper.  If not, see <https://gnu.org>.
 
 service_sources = [
+  'src/mixes/mix_service_impl.vala',
+  'src/mixes/mix_service.vala',
   'src/user_state/user_state_service_impl.vala',
   'src/user_state/user_state_service.vala',
   'src/libraries/library_service_impl.vala',

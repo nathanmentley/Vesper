@@ -81,14 +81,26 @@ namespace Vesper.App.Windows {
              * Controllers
              * ---------------------------------------------------------
              */
-            this.browser_controller = new BrowserController (ioc.library_service, this);
-            this.now_playing_controller = new NowPlayingController (ioc.library_service, this);
+            this.browser_controller = new BrowserController (
+                ioc.library_service,
+                ioc.playlist_service,
+                this
+            );
+            this.now_playing_controller = new NowPlayingController (
+                ioc.library_service,
+                this.playlist,
+                this
+            );
             this.player_controller = new PlayerController (
                 ioc.media_service,
                 ioc.user_state_service,
                 this
             );
-            this.playlist_controller = new PlaylistController (playlist, ioc.playlist_service, this);
+            this.playlist_controller = new PlaylistController (
+                ioc.playlist_service,
+                ioc.mix_service,
+                this
+            );
             this.settings_controller = new SettingsController (ioc.settings_service, this);
 
             build_ui ();
@@ -398,20 +410,12 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            playlist_controller.selected.connect (
-                () => {
-                    Song? song =
-                        playlist.get_current_song ();
+            playlist_controller.play_requested.connect (
+                songs => play_songs (songs, false)
+            );
 
-                    if (song == null) {
-                        player_controller.stop ();
-                        return;
-                    }
-
-                    start_new_song (
-                        song
-                    );
-                }
+            playlist_controller.shuffle_requested.connect (
+                songs => play_songs (songs, true)
             );
 
             ioc.library_service.library_refresh.connect (
@@ -419,6 +423,18 @@ namespace Vesper.App.Windows {
                     browser_controller.load_artists ();
 
                     playlist_controller.load_playlists.begin ();
+                }
+            );
+
+            /*
+             * ---------------------------------------------------------
+             * Now Playing
+             * ---------------------------------------------------------
+             */
+
+            now_playing_controller.play_requested.connect (
+                song => {
+                    start_new_song (song);
                 }
             );
 
@@ -484,7 +500,20 @@ namespace Vesper.App.Windows {
                 );
             }
 
-            playlist_controller.rebuild ();
+        }
+
+        private void play_songs (Gee.List<Song> songs, bool shuffle) {
+            playlist.clear ();
+            foreach (Song song in songs) {
+                playlist.add_song (song);
+            }
+            if (shuffle) {
+                Song? song = playlist.get_random_song ();
+                if (song != null) start_new_song (song);
+            } else {
+                Song? song = playlist.get_current_song ();
+                if (song != null) start_new_song (song);
+            }
         }
 
         private void on_song_finished () {
@@ -572,7 +601,6 @@ namespace Vesper.App.Windows {
                 song
             );
 
-            playlist_controller.rebuild ();
         }
 
         /*

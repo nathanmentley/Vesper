@@ -25,6 +25,7 @@ using Vesper.Data;
 
 using Vesper.Service.Libraries;
 using Vesper.Service.Media;
+using Vesper.Service.Mixes;
 using Vesper.Service.Playlists;
 using Vesper.Service.Plugins;
 using Vesper.Service.Settings;
@@ -39,6 +40,7 @@ namespace Vesper.App {
         public SettingsService settings_service { get; private set; }
         public PlaylistService playlist_service { get; private set; }
         public UserStateService user_state_service { get; private set; }
+        public MixService mix_service { get; private set; }
 
         public IOC () {
             Object ();
@@ -85,6 +87,10 @@ namespace Vesper.App {
             user_state_service = new UserStateServiceImpl (
                 user_state_repository,
                 library_service
+            );
+            mix_service = new MixServiceImpl (
+                library_service,
+                user_state_service
             );
         }
 

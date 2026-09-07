@@ -68,9 +68,11 @@ namespace Vesper.App.Controllers {
                     song_finished ();
                 }
             });
+
+            connect_view ();
         }
         
-        protected override void connect_view () {
+        private void connect_view () {
             view.play_requested.connect (resume);
 
             view.pause_requested.connect (pause);

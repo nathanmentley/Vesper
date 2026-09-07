@@ -31,18 +31,26 @@ namespace Vesper.App.Components {
         private int index;
         private bool is_current;
         private int playlist_length;
+        private bool editable;
 
         private Button up_button;
         private Button down_button;
         private Button delete_button;
 
-        public PlaylistEntry (Song song, int index, bool is_current, int playlist_length) {
+        public PlaylistEntry (
+            Song song,
+            int index,
+            bool is_current,
+            int playlist_length,
+            bool editable = false
+        ) {
             Object ();
 
             this.song = song;
             this.index = index;
             this.is_current = is_current;
             this.playlist_length = playlist_length;
+            this.editable = editable;
 
             build_ui ();
             connect_signals ();
@@ -67,6 +75,10 @@ namespace Vesper.App.Components {
             }
 
             activatable = true;
+
+            if (!editable) {
+                return;
+            }
 
             up_button = new Button ();
 

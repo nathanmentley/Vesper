@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2026 Nathan Mentley <nathanmentley@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://gnu.org>.
+ */
+
 using GLib;
 using Gee;
 
@@ -31,7 +48,8 @@ namespace Vesper.App.Tests {
                     "Song A",
                     "stream://song-1",
                     1,
-                    new Album ("album-1", "Album A")
+                    new Album ("album-1", "Album A"),
+                    new Artist ("artist-1", "Artist A", "library-1")
                 )
             );
 
@@ -125,6 +143,7 @@ namespace Vesper.App.Tests {
                 "https://example.test/song-1",
                 1,
                 album,
+                artist,
                 null,
                 null,
                 null,

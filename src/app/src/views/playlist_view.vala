@@ -8,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -20,488 +20,746 @@ using Gtk;
 using Adw;
 
 using Vesper.Core.Models;
-
 using Vesper.App.Components;
-using Vesper.App.Models;
-using Vesper.App.Utils;
+using Vesper.App.Views;
 
 namespace Vesper.App.Views {
     public class PlaylistView : BaseView {
-        /*
-         * -------------------------------------------------------------
-         * Signals
-         * -------------------------------------------------------------
-         */
-
-        public signal void selected ();
-
-        public signal void change_playlist_request (Playlist playlist);
-
+        public signal void mix_selected (MixType type);
+        public signal void playlist_selected (Playlist playlist);
+        public signal void play_requested (Gee.List<Song> songs);
+        public signal void shuffle_requested (Gee.List<Song> songs);
         public signal void create_playlist_request (string name);
-
-        public signal void rename_playlist_request (Playlist playlist, string name);
-
+        public signal void rename_playlist_request (
+            Playlist playlist,
+            string name
+        );
         public signal void delete_playlist_request (Playlist playlist);
+        public signal void playlist_songs_changed (
+            Playlist playlist,
+            Gee.List<Song> songs
+        );
 
-        /*
-         * -------------------------------------------------------------
-         * Playlist
-         * -------------------------------------------------------------
-         */
-
-        private PlayQueue playlist;
-
+        private Gtk.Stack stack;
+        private ListBox landing_list;
         private ListBox song_list;
 
-        private GLib.ListStore playlist_store;
-        private DropDown playlist_dropdown;
+        private Button detail_play_button;
+        private Button detail_shuffle_button;
+        private Button detail_menu_button;
 
-        private Button menu_button;
+        private Label detail_title;
+        private Label detail_count;
 
-        private Gtk.Stack content_stack;
-        private Adw.StatusPage empty_page;
+        private Playlist? selected_playlist;
 
-        /*
-         * Currently selected Navidrome playlist.
-         *
-         * This is separate from the local playback Playlist model.
-         */
-        private Playlist? selected_playlist = null;
+        private Gee.List<Song> detail_songs =
+            new ArrayList<Song> ();
 
-        public PlaylistView (PlayQueue playlist, Gtk.Window parent_window) {
+        public PlaylistView (Gtk.Window parent_window) {
             base (parent_window);
-
-            this.playlist = playlist;
-
             build_ui ();
-            connect_signals ();
         }
 
-        /*
-         * =============================================================
-         * UI
-         * =============================================================
-         */
-
         private void build_ui () {
-            /*
-             * ---------------------------------------------------------
-             * Playlist model
-             * ---------------------------------------------------------
-             */
+            stack = new Gtk.Stack ();
+            stack.hexpand = true;
+            stack.vexpand = true;
 
-            playlist_store =
-                new GLib.ListStore (
-                    typeof (Playlist)
-                );
-
-            var expression =
-                new PropertyExpression (
-                    typeof (Playlist),
-                    null,
-                    "name"
-                );
-
-            playlist_dropdown =
-                new DropDown (
-                    playlist_store,
-                    expression
-                );
-
-            playlist_dropdown.hexpand = true;
-
-            /*
-             * ---------------------------------------------------------
-             * Playlist selector
-             * ---------------------------------------------------------
-             *
-             *             [ My Playlist ▼ ] [ ⋮ ]
-             *
-             * No "Playlist" label is necessary. The dropdown's
-             * selected value provides the context.
-             * ---------------------------------------------------------
-             */
-
-            var playlist_row =
-                new Gtk.Box (
-                    Orientation.HORIZONTAL,
-                    6
-                );
-
-            playlist_row.hexpand = true;
-
-            playlist_row.append (
-                playlist_dropdown
+            stack.add_named (
+                build_landing (),
+                "landing"
             );
 
+            stack.add_named (
+                build_detail (),
+                "detail"
+            );
+
+            append (stack);
+        }
+
+        private Widget build_landing () {
+            var content = new Box (
+                Orientation.VERTICAL,
+                0
+            );
+
+            content.set_margin_top (24);
+            content.set_margin_bottom (24);
+            content.set_margin_start (24);
+            content.set_margin_end (24);
+
             /*
-             * ---------------------------------------------------------
-             * Playlist menu
-             * ---------------------------------------------------------
+             * Page header
              */
+            var header = new Box (
+                Orientation.HORIZONTAL,
+                12
+            );
 
-            menu_button =
-                new Button ();
+            var title_box = new Box (
+                Orientation.VERTICAL,
+                2
+            );
 
-            menu_button.icon_name =
-                "view-more-symbolic";
+            var title = new Label ("Playlists");
+            title.halign = Align.START;
+            title.add_css_class ("title-1");
 
-            menu_button.tooltip_text =
+            var subtitle = new Label (
+                "Your playlists and personalized mixes"
+            );
+
+            subtitle.halign = Align.START;
+            subtitle.add_css_class ("dim-label");
+
+            title_box.append (title);
+            title_box.append (subtitle);
+
+            header.append (title_box);
+
+            var spacer = new Box (
+                Orientation.HORIZONTAL,
+                0
+            );
+
+            spacer.hexpand = true;
+            header.append (spacer);
+
+            var new_button = new Button.from_icon_name (
+                "list-add-symbolic"
+            );
+
+            new_button.tooltip_text = "New Playlist";
+            new_button.add_css_class ("suggested-action");
+
+            new_button.clicked.connect (
+                show_create_dialog
+            );
+
+            header.append (new_button);
+
+            content.append (header);
+
+            /*
+             * Main scrolling content
+             */
+            var scroller = new ScrolledWindow ();
+            scroller.vexpand = true;
+            scroller.hexpand = true;
+
+            var sections = new Box (
+                Orientation.VERTICAL,
+                24
+            );
+
+            sections.set_margin_top (24);
+
+            /*
+             * Mixes
+             */
+            var mixes_box = new Box (
+                Orientation.VERTICAL,
+                10
+            );
+
+            var mixes_title = new Label ("Mixes");
+            mixes_title.halign = Align.START;
+            mixes_title.add_css_class ("title-3");
+
+            mixes_box.append (mixes_title);
+
+            /*
+             * FlowBox automatically wraps the mix cards as the
+             * available width changes.
+             */
+            var mixes_flow = new FlowBox ();
+
+            mixes_flow.selection_mode =
+                SelectionMode.NONE;
+
+            mixes_flow.homogeneous = true;
+            mixes_flow.row_spacing = 12;
+            mixes_flow.column_spacing = 12;
+            mixes_flow.hexpand = true;
+
+            add_mix_card (
+                mixes_flow,
+                MixType.FAVORITES,
+                "Favorites",
+                "Songs you've saved",
+                "starred-symbolic"
+            );
+
+            add_mix_card (
+                mixes_flow,
+                MixType.RECENTLY_PLAYED,
+                "Recently Played",
+                "Songs you've listened to lately",
+                "document-open-recent-symbolic"
+            );
+
+            add_mix_card (
+                mixes_flow,
+                MixType.RECENTLY_ADDED,
+                "Recently Added",
+                "New additions to your library",
+                "list-add-symbolic"
+            );
+
+            add_mix_card (
+                mixes_flow,
+                MixType.MOST_PLAYED,
+                "Most Played",
+                "Your most played songs",
+                "media-playlist-shuffle-symbolic"
+            );
+
+            add_mix_card (
+                mixes_flow,
+                MixType.NEVER_PLAYED,
+                "Never Played",
+                "Songs waiting to be discovered",
+                "media-playlist-symbolic"
+            );
+
+            mixes_box.append (mixes_flow);
+            sections.append (mixes_box);
+
+            /*
+             * User playlists
+             */
+            var playlists_box = new Box (
+                Orientation.VERTICAL,
+                10
+            );
+
+            var playlists_header = new Box (
+                Orientation.HORIZONTAL,
+                8
+            );
+
+            var playlists_title = new Label (
+                "Your Playlists"
+            );
+
+            playlists_title.halign = Align.START;
+            playlists_title.add_css_class ("title-3");
+            playlists_title.hexpand = true;
+
+            playlists_header.append (playlists_title);
+
+            var create_button = new Button.with_label (
+                "New Playlist"
+            );
+
+            create_button.add_css_class ("flat");
+
+            create_button.clicked.connect (
+                show_create_dialog
+            );
+
+            playlists_header.append (create_button);
+
+            playlists_box.append (playlists_header);
+
+            landing_list = new ListBox ();
+
+            landing_list.selection_mode =
+                SelectionMode.NONE;
+
+            landing_list.show_separators = false;
+            landing_list.add_css_class ("boxed-list");
+
+            playlists_box.append (landing_list);
+
+            sections.append (playlists_box);
+
+            scroller.set_child (sections);
+            content.append (scroller);
+
+            return content;
+        }
+
+        private void add_mix_card (
+            FlowBox flow,
+            MixType type,
+            string name,
+            string description,
+            string icon_name
+        ) {
+            var button = new Button ();
+
+            /*
+             * This gives FlowBox a useful minimum width. As the
+             * available space decreases, cards wrap instead of
+             * becoming absurdly narrow.
+             */
+            button.set_size_request (
+                240,
+                -1
+            );
+
+            button.hexpand = true;
+
+            button.add_css_class ("card");
+            button.add_css_class ("flat");
+
+            var content = new Box (
+                Orientation.HORIZONTAL,
+                12
+            );
+
+            content.set_margin_top (16);
+            content.set_margin_bottom (16);
+            content.set_margin_start (16);
+            content.set_margin_end (16);
+
+            var icon = new Image.from_icon_name (
+                icon_name
+            );
+
+            icon.pixel_size = 32;
+            icon.valign = Align.CENTER;
+
+            content.append (icon);
+
+            var text = new Box (
+                Orientation.VERTICAL,
+                2
+            );
+
+            text.valign = Align.CENTER;
+            text.hexpand = true;
+
+            var title = new Label (name);
+            title.halign = Align.START;
+            title.ellipsize =
+                Pango.EllipsizeMode.END;
+
+            title.add_css_class ("heading");
+
+            var subtitle = new Label (
+                description
+            );
+
+            subtitle.halign = Align.START;
+            subtitle.ellipsize =
+                Pango.EllipsizeMode.END;
+
+            subtitle.add_css_class ("dim-label");
+
+            text.append (title);
+            text.append (subtitle);
+
+            content.append (text);
+
+            var arrow = new Image.from_icon_name (
+                "go-next-symbolic"
+            );
+
+            arrow.valign = Align.CENTER;
+            arrow.add_css_class ("dim-label");
+
+            content.append (arrow);
+
+            button.set_child (content);
+
+            button.clicked.connect (() => {
+                mix_selected (type);
+            });
+
+            var child = new FlowBoxChild ();
+            child.set_child (button);
+
+            flow.append (child);
+        }
+
+        private Widget build_detail () {
+            var content = new Box (
+                Orientation.VERTICAL,
+                12
+            );
+
+            content.set_margin_top (12);
+            content.set_margin_bottom (12);
+            content.set_margin_start (12);
+            content.set_margin_end (12);
+
+            var header = new Box (
+                Orientation.HORIZONTAL,
+                8
+            );
+
+            var back = new Button.from_icon_name (
+                "go-previous-symbolic"
+            );
+
+            back.tooltip_text =
+                "Back to playlists";
+
+            back.add_css_class ("flat");
+
+            back.clicked.connect (() => {
+                stack.visible_child_name =
+                    "landing";
+            });
+
+            header.append (back);
+
+            detail_title = new Label ("");
+            detail_title.halign = Align.START;
+            detail_title.hexpand = true;
+            detail_title.add_css_class ("title-2");
+
+            header.append (detail_title);
+
+            detail_count = new Label ("");
+            detail_count.add_css_class ("dim-label");
+
+            header.append (detail_count);
+
+            detail_menu_button =
+                new Button.from_icon_name (
+                    "view-more-symbolic"
+                );
+
+            detail_menu_button.tooltip_text =
                 "Playlist options";
 
-            menu_button.add_css_class (
-                "flat"
+            detail_menu_button.add_css_class ("flat");
+
+            detail_menu_button.clicked.connect (
+                show_playlist_menu
             );
 
-            playlist_row.append (
-                menu_button
+            header.append (detail_menu_button);
+
+            content.append (header);
+
+            var actions = new Box (
+                Orientation.HORIZONTAL,
+                8
             );
 
-            /*
-             * ---------------------------------------------------------
-             * Song list
-             * ---------------------------------------------------------
-             */
+            detail_play_button =
+                new Button.with_label ("Play");
 
-            song_list =
-                new ListBox ();
+            detail_play_button.clicked.connect (() => {
+                play_requested (
+                    new ArrayList<Song>.wrap (
+                        detail_songs.to_array ()
+                    )
+                );
+            });
+
+            detail_shuffle_button =
+                new Button.with_label ("Shuffle");
+
+            detail_shuffle_button.clicked.connect (() => {
+                shuffle_requested (
+                    new ArrayList<Song>.wrap (
+                        detail_songs.to_array ()
+                    )
+                );
+            });
+
+            actions.append (detail_play_button);
+            actions.append (detail_shuffle_button);
+
+            content.append (actions);
+
+            song_list = new ListBox ();
 
             song_list.selection_mode =
                 SelectionMode.NONE;
 
-            song_list.show_separators =
-                true;
+            song_list.show_separators = true;
+            song_list.add_css_class ("boxed-list");
 
-            song_list.add_css_class (
-                "boxed-list"
-            );
+            var scroller = new ScrolledWindow ();
+            scroller.vexpand = true;
+            scroller.set_child (song_list);
 
-            /*
-             * ---------------------------------------------------------
-             * Scroller
-             * ---------------------------------------------------------
-             */
+            content.append (scroller);
 
-            var song_scroller =
-                new ScrolledWindow ();
-
-            song_scroller.hscrollbar_policy =
-                PolicyType.NEVER;
-
-            song_scroller.vscrollbar_policy =
-                PolicyType.AUTOMATIC;
-
-            song_scroller.vexpand = true;
-            song_scroller.hexpand = true;
-
-            song_scroller.set_child (
-                song_list
-            );
-
-            /*
-             * ---------------------------------------------------------
-             * Empty state
-             * ---------------------------------------------------------
-             */
-
-            empty_page =
-                new Adw.StatusPage ();
-
-            empty_page.vexpand = true;
-
-            empty_page.icon_name =
-                "audio-x-generic-symbolic";
-
-            empty_page.title =
-                "Playlist is empty";
-
-            empty_page.description =
-                "Add songs from your library to build a playlist.";
-
-            /*
-             * ---------------------------------------------------------
-             * Content stack
-             * ---------------------------------------------------------
-             */
-
-            content_stack =
-                new Gtk.Stack ();
-
-            content_stack.vexpand = true;
-            content_stack.hexpand = true;
-
-            content_stack.add_named (
-                empty_page,
-                "empty"
-            );
-
-            content_stack.add_named (
-                song_scroller,
-                "songs"
-            );
-
-            /*
-             * ---------------------------------------------------------
-             * Main content
-             * ---------------------------------------------------------
-             */
-
-            var content =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    18
-                );
-
-            content.hexpand = true;
-            content.vexpand = true;
-
-            content.append (
-                playlist_row
-            );
-
-            content.append (
-                content_stack
-            );
-
-            /*
-             * ---------------------------------------------------------
-             * Clamp
-             * ---------------------------------------------------------
-             */
-
-            var clamp =
-                new Adw.Clamp ();
-
-            clamp.maximum_size =
-                900;
-
-            clamp.tightening_threshold =
-                700;
-
-            clamp.set_margin_top (
-                12
-            );
-
-            clamp.set_margin_bottom (
-                12
-            );
-
-            clamp.set_margin_start (
-                12
-            );
-
-            clamp.set_margin_end (
-                12
-            );
-
-            clamp.vexpand = true;
-            clamp.hexpand = true;
-
-            clamp.set_child (
-                content
-            );
-
-            append (
-                clamp
-            );
+            return content;
         }
 
-        /*
-         * =============================================================
-         * Signals
-         * =============================================================
-         */
+        public void show_landing (
+            Gee.List<Playlist> playlists
+        ) {
+            clear_list (landing_list);
 
-        private void connect_signals () {
-            /*
-             * ---------------------------------------------------------
-             * Playlist selection
-             * ---------------------------------------------------------
-             */
+            foreach (Playlist playlist in playlists) {
+                var row = new ActionRow ();
 
-            playlist_dropdown.notify["selected"].connect (() => {
-                Playlist? selected_obj =
-                    playlist_dropdown.selected_item
-                        as Playlist;
+                row.title = playlist.name;
 
-                if (selected_obj == null) {
-                    return;
+                row.subtitle =
+                    "%d songs".printf (
+                        playlist.song_count
+                    );
+
+                row.activatable = true;
+
+                var icon = new Image.from_icon_name (
+                    "audio-x-generic-symbolic"
+                );
+
+                icon.valign = Align.CENTER;
+
+                row.add_prefix (icon);
+
+                var arrow = new Image.from_icon_name (
+                    "go-next-symbolic"
+                );
+
+                arrow.add_css_class ("dim-label");
+
+                row.add_suffix (arrow);
+
+                row.activated.connect (() => {
+                    playlist_selected (playlist);
+                });
+
+                landing_list.append (row);
+            }
+
+            stack.visible_child_name =
+                "landing";
+        }
+
+        public void show_detail (
+            string title,
+            Gee.List<Song> songs,
+            bool editable,
+            Playlist? playlist
+        ) {
+            selected_playlist = playlist;
+
+            detail_songs.clear ();
+
+            foreach (Song song in songs) {
+                detail_songs.add (song);
+            }
+
+            render_detail (
+                title,
+                editable,
+                playlist
+            );
+
+            stack.visible_child_name =
+                "detail";
+        }
+
+        private void render_detail (
+            string title,
+            bool editable,
+            Playlist? playlist
+        ) {
+            detail_title.set_text (title);
+
+            detail_count.set_text (
+                "%d songs".printf (
+                    detail_songs.size
+                )
+            );
+
+            detail_menu_button.visible =
+                editable;
+
+            clear_list (song_list);
+
+            int index = 0;
+
+            foreach (Song song in detail_songs) {
+                if (editable && playlist != null) {
+                    var entry = new PlaylistEntry (
+                        song,
+                        index,
+                        false,
+                        detail_songs.size,
+                        true
+                    );
+
+                    entry.move_up_request.connect (
+                        index => move_song (
+                            index,
+                            -1
+                        )
+                    );
+
+                    entry.move_down_request.connect (
+                        index => move_song (
+                            index,
+                            1
+                        )
+                    );
+
+                    entry.delete_request.connect (
+                        remove_song
+                    );
+
+                    song_list.append (entry);
+                } else {
+                    var row = new ActionRow ();
+
+                    row.title = song.title;
+                    row.subtitle =
+                        song.album.name;
+
+                    row.activatable = true;
+
+                    row.activated.connect (() => {
+                        play_requested (
+                            new ArrayList<Song>.wrap (
+                                { song }
+                            )
+                        );
+                    });
+
+                    song_list.append (row);
                 }
 
-                selected_playlist =
-                    selected_obj;
+                index++;
+            }
 
-                change_playlist_request (
-                    selected_obj
-                );
-            });
+            detail_play_button.sensitive =
+                detail_songs.size > 0;
 
-            /*
-             * ---------------------------------------------------------
-             * Playlist menu
-             * ---------------------------------------------------------
-             */
-
-            menu_button.clicked.connect (() => {
-                show_playlist_menu ();
-            });
+            detail_shuffle_button.sensitive =
+                detail_songs.size > 0;
         }
 
-        /*
-         * =============================================================
-         * Playlist menu
-         * =============================================================
-         */
+        private void move_song (
+            int index,
+            int offset
+        ) {
+            int target = index + offset;
 
-private void show_playlist_menu () {
-    var popover =
-        new Gtk.Popover ();
+            if (index < 0 ||
+                index >= detail_songs.size ||
+                target < 0 ||
+                target >= detail_songs.size) {
+                return;
+            }
 
-    popover.has_arrow = true;
+            Song song = detail_songs[index];
 
-    var box =
-        new Gtk.Box (
-            Orientation.VERTICAL,
-            0
-        );
+            detail_songs.remove_at (index);
 
-    box.margin_top = 6;
-    box.margin_bottom = 6;
-    box.margin_start = 6;
-    box.margin_end = 6;
+            detail_songs.insert (
+                target,
+                song
+            );
 
-    /*
-     * -------------------------------------------------------------
-     * New Playlist
-     * -------------------------------------------------------------
-     */
+            rebuild_detail ();
 
-    var new_button =
-        new Button.with_label (
-            "New Playlist"
-        );
+            if (selected_playlist != null) {
+                playlist_songs_changed (
+                    selected_playlist,
+                    detail_songs
+                );
+            }
+        }
 
-    new_button.halign =
-        Align.FILL;
+        private void remove_song (
+            int index
+        ) {
+            if (index < 0 ||
+                index >= detail_songs.size) {
+                return;
+            }
 
-    new_button.add_css_class (
-        "flat"
-    );
+            detail_songs.remove_at (index);
 
-    new_button.clicked.connect (() => {
-        popover.popdown ();
-        show_create_dialog ();
-    });
+            rebuild_detail ();
 
-    box.append (
-        new_button
-    );
+            if (selected_playlist != null) {
+                playlist_songs_changed (
+                    selected_playlist,
+                    detail_songs
+                );
+            }
+        }
 
-    /*
-     * -------------------------------------------------------------
-     * Rename Playlist
-     * -------------------------------------------------------------
-     */
+        private void rebuild_detail () {
+            if (selected_playlist == null) {
+                return;
+            }
 
-    if (selected_playlist != null) {
-        var rename_button =
-            new Button.with_label (
+            render_detail (
+                selected_playlist.name,
+                true,
+                selected_playlist
+            );
+        }
+
+        private void show_playlist_menu () {
+            if (selected_playlist == null) {
+                return;
+            }
+
+            var playlist = selected_playlist;
+
+            var popover = new Popover ();
+
+            var box = new Box (
+                Orientation.VERTICAL,
+                0
+            );
+
+            var rename = new Button.with_label (
                 "Rename Playlist"
             );
 
-        rename_button.halign =
-            Align.FILL;
+            rename.add_css_class ("flat");
 
-        rename_button.add_css_class (
-            "flat"
-        );
-
-        rename_button.clicked.connect (() => {
-            popover.popdown ();
-
-            if (selected_playlist != null) {
+            rename.clicked.connect (() => {
+                popover.popdown ();
                 show_rename_dialog (
-                    selected_playlist
+                    playlist
                 );
-            }
-        });
+            });
 
-        box.append (
-            rename_button
-        );
-
-        /*
-         * ---------------------------------------------------------
-         * Delete Playlist
-         * ---------------------------------------------------------
-         */
-
-        var delete_button =
-            new Button.with_label (
+            var delete = new Button.with_label (
                 "Delete Playlist"
             );
 
-        delete_button.halign =
-            Align.FILL;
+            delete.add_css_class ("flat");
+            delete.add_css_class (
+                "destructive-action"
+            );
 
-        delete_button.add_css_class (
-            "flat"
-        );
-
-        delete_button.add_css_class (
-            "destructive-action"
-        );
-
-        delete_button.clicked.connect (() => {
-            popover.popdown ();
-
-            if (selected_playlist != null) {
-                show_delete_dialog (
-                    selected_playlist
+            delete.clicked.connect (() => {
+                popover.popdown ();
+                delete_playlist_request (
+                    playlist
                 );
-            }
-        });
+            });
 
-        box.append (
-            delete_button
-        );
-    }
+            box.append (rename);
+            box.append (delete);
 
-    popover.set_child (
-        box
-    );
-
-    popover.set_parent (
-        menu_button
-    );
-
-    popover.popup ();
-}
-
-        /*
-         * =============================================================
-         * Create playlist
-         * =============================================================
-         */
+            popover.set_child (box);
+            popover.set_parent (
+                detail_menu_button
+            );
+            popover.popup ();
+        }
 
         private void show_create_dialog () {
-            var entry =
-                new Entry ();
+            var entry = new Entry ();
 
-            entry.placeholder_text =
-                "Playlist name";
-
-            entry.activates_default = true;
-
-            var dialog =
-                new Adw.AlertDialog (
-                    "Create Playlist",
-                    "Give your new playlist a name."
-                );
-
-            dialog.set_extra_child (
-                entry
+            var dialog = new Adw.AlertDialog (
+                "Create Playlist",
+                "Give your new playlist a name."
             );
+
+            dialog.set_extra_child (entry);
 
             dialog.add_response (
                 "cancel",
@@ -513,73 +771,34 @@ private void show_playlist_menu () {
                 "Create"
             );
 
-            dialog.set_default_response (
-                "create"
-            );
-
-            dialog.set_close_response (
-                "cancel"
-            );
-
-            dialog.set_response_appearance (
-                "create",
-                Adw.ResponseAppearance.SUGGESTED
-            );
-
-            dialog.response.connect ((response) => {
-                if (response != "create") {
-                    return;
+            dialog.response.connect (
+                response => {
+                    if (response == "create" &&
+                        entry.text.strip () != "") {
+                        create_playlist_request (
+                            entry.text.strip ()
+                        );
+                    }
                 }
-
-                string name =
-                    entry.text.strip ();
-
-                if (name.length == 0) {
-                    return;
-                }
-
-                create_playlist_request (
-                    name
-                );
-            });
+            );
 
             dialog.present (
-                get_root () as Gtk.Widget
+                get_root () as Widget
             );
         }
-
-        /*
-         * =============================================================
-         * Rename playlist
-         * =============================================================
-         */
 
         private void show_rename_dialog (
             Playlist playlist
         ) {
-            var entry =
-                new Entry ();
+            var entry = new Entry ();
+            entry.text = playlist.name;
 
-            entry.text =
-                playlist.name;
-
-            entry.activates_default =
-                true;
-
-            entry.select_region (
-                0,
-                -1
+            var dialog = new Adw.AlertDialog (
+                "Rename Playlist",
+                null
             );
 
-            var dialog =
-                new Adw.AlertDialog (
-                    "Rename Playlist",
-                    null
-                );
-
-            dialog.set_extra_child (
-                entry
-            );
+            dialog.set_extra_child (entry);
 
             dialog.add_response (
                 "cancel",
@@ -591,225 +810,31 @@ private void show_playlist_menu () {
                 "Rename"
             );
 
-            dialog.set_default_response (
-                "rename"
-            );
-
-            dialog.set_close_response (
-                "cancel"
-            );
-
-            dialog.set_response_appearance (
-                "rename",
-                Adw.ResponseAppearance.SUGGESTED
-            );
-
-            dialog.response.connect ((response) => {
-                if (response != "rename") {
-                    return;
+            dialog.response.connect (
+                response => {
+                    if (response == "rename" &&
+                        entry.text.strip () != "") {
+                        rename_playlist_request (
+                            playlist,
+                            entry.text.strip ()
+                        );
+                    }
                 }
-
-                string name =
-                    entry.text.strip ();
-
-                if (name.length == 0) {
-                    return;
-                }
-
-                rename_playlist_request (
-                    playlist,
-                    name
-                );
-            });
+            );
 
             dialog.present (
-                get_root () as Gtk.Widget
+                get_root () as Widget
             );
         }
 
-        /*
-         * =============================================================
-         * Delete playlist
-         * =============================================================
-         */
-
-        private void show_delete_dialog (
-            Playlist playlist
+        public void show_error (
+            string message
         ) {
-            var dialog =
-                new Adw.AlertDialog (
-                    "Delete Playlist?",
-                    @"Are you sure you want to delete \"$(playlist.name)\"?"
-                );
-
-            dialog.add_response (
-                "cancel",
-                "Cancel"
-            );
-
-            dialog.add_response (
-                "delete",
-                "Delete"
-            );
-
-            dialog.set_close_response (
-                "cancel"
-            );
-
-            dialog.set_response_appearance (
-                "delete",
-                Adw.ResponseAppearance.DESTRUCTIVE
-            );
-
-            dialog.response.connect ((response) => {
-                if (response != "delete") {
-                    return;
-                }
-
-                delete_playlist_request (
-                    playlist
-                );
-            });
-
-            dialog.present (
-                get_root () as Gtk.Widget
+            warning (
+                "Playlist error: %s",
+                message
             );
         }
-
-        /*
-         * =============================================================
-         * Playlist dropdown
-         * =============================================================
-         */
-
-        public void clear_playlist_dropdown () {
-            selected_playlist = null;
-
-            playlist_store.remove_all ();
-        }
-
-        public void add_playlist_to_dropdown (
-            Playlist playlist
-        ) {
-            playlist_store.append (playlist);
-        }
-
-        /*
-         * =============================================================
-         * Rebuild playlist
-         * =============================================================
-         */
-
-        public void rebuild () {
-            clear_list (
-                song_list
-            );
-
-            Collection<Song> songs =
-                playlist.get_songs ();
-
-            int current_index =
-                playlist.get_current_index ();
-
-            int playlist_length =
-                songs.size;
-
-            int counter = 0;
-
-            foreach (Song song in songs) {
-                PlaylistEntry entry =
-                    new PlaylistEntry (
-                        song,
-                        counter,
-                        counter == current_index,
-                        playlist_length
-                    );
-
-                /*
-                 * Select song.
-                 */
-
-                entry.selected.connect (
-                    index => {
-                        playlist.set_current_index (
-                            index
-                        );
-
-                        selected ();
-
-                        rebuild ();
-                    }
-                );
-
-                /*
-                 * Move up.
-                 */
-
-                entry.move_up_request.connect (
-                    index => {
-                        playlist.move_song (
-                            index,
-                            index - 1
-                        );
-
-                        rebuild ();
-                    }
-                );
-
-                /*
-                 * Move down.
-                 */
-
-                entry.move_down_request.connect (
-                    index => {
-                        playlist.move_song (
-                            index,
-                            index + 1
-                        );
-
-                        rebuild ();
-                    }
-                );
-
-                /*
-                 * Delete.
-                 */
-
-                entry.delete_request.connect (
-                    index => {
-                        playlist.delete_song (
-                            index
-                        );
-
-                        rebuild ();
-                    }
-                );
-
-                song_list.append (
-                    entry
-                );
-
-                counter++;
-            }
-
-            /*
-             * Empty state.
-             */
-
-            if (playlist_length == 0) {
-                content_stack.visible_child_name =
-                    "empty";
-            } else {
-                content_stack.visible_child_name =
-                    "songs";
-            }
-        }
-
-        /*
-         * =============================================================
-         * Clear ListBox
-         * =============================================================
-         */
 
         private void clear_list (
             ListBox list
@@ -821,9 +846,7 @@ private void show_playlist_menu () {
                 Widget? next =
                     child.get_next_sibling ();
 
-                list.remove (
-                    child
-                );
+                list.remove (child);
 
                 child = next;
             }

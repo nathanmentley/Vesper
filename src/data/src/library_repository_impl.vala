@@ -383,15 +383,20 @@ namespace Vesper.Data {
 
             var album_statement = prepare ("""
                 SELECT
-                    id,
-                    name,
-                    cover,
-                    year,
-                    musicbrainz_release_id,
-                    musicbrainz_release_group_id,
-                    added_at
-                FROM albums
-                WHERE id = ?
+                    a.id,
+                    a.name,
+                    a.cover,
+                    a.year,
+                    a.musicbrainz_release_id,
+                    a.musicbrainz_release_group_id,
+                    a.added_at,
+                    ar.id,
+                    ar.name,
+                    ar.library_id
+                FROM albums a
+                JOIN artists ar
+                    ON a.artist_id = ar.id
+                WHERE a.id = ?
             """);
 
             album_statement.bind_text (1, album_id);
@@ -411,12 +416,20 @@ namespace Vesper.Data {
                 year = album_statement.column_text (3);
             }
 
+            var artist = new Artist (
+                album_statement.column_text (7),
+                album_statement.column_text (8),
+                album_statement.column_text (9)
+            );
+
             var album = new Album (
                 album_statement.column_text (0),
                 album_statement.column_text (1),
                 cover,
                 year,
-                get_album_genres (album_statement.column_text (0)),
+                get_album_genres (
+                    album_statement.column_text (0)
+                ),
                 nullable_text (album_statement, 4),
                 nullable_text (album_statement, 5),
                 nullable_int64 (album_statement, 6)
@@ -456,6 +469,7 @@ namespace Vesper.Data {
                         statement.column_text (2),
                         statement.column_int (3),
                         album,
+                        artist,
                         nullable_int (statement, 4),
                         nullable_int (statement, 5),
                         nullable_int (statement, 6),
@@ -468,12 +482,33 @@ namespace Vesper.Data {
                         nullable_text (statement, 13),
                         nullable_int (statement, 14),
                         nullable_text (statement, 15),
-                        get_song_genres (statement.column_text (0)),
+                        get_song_genres (
+                            statement.column_text (0)
+                        ),
                         nullable_int64 (statement, 16)
                     )
                 );
             }
 
+            return songs;
+        }
+
+        public Gee.List<Song> get_recently_added (int limit = 50) throws Error {
+            var songs = new Gee.ArrayList<Song> ();
+            var statement = prepare ("""
+                SELECT id
+                FROM songs
+                WHERE added_at IS NOT NULL
+                ORDER BY added_at DESC, id
+                LIMIT ?;
+            """);
+            statement.bind_int (1, limit);
+            while (statement.step () == Sqlite.ROW) {
+                Song? song = get_track ("", statement.column_text (0));
+                if (song != null) {
+                    songs.add (song);
+                }
+            }
             return songs;
         }
 
@@ -486,10 +521,16 @@ namespace Vesper.Data {
                     s.id,
                     s.title,
                     s.stream_url,
+
+                    ar.id,
+                    ar.name,
+                    ar.library_id,
+
                     a.id,
                     a.name,
                     a.cover,
                     a.year,
+
                     s.track_number,
                     s.duration,
                     s.disc_number,
@@ -503,16 +544,23 @@ namespace Vesper.Data {
                     s.file_suffix,
                     s.bpm,
                     s.musicbrainz_recording_id,
+
                     a.musicbrainz_release_id,
                     a.musicbrainz_release_group_id,
                     a.added_at,
+
                     s.added_at
                 FROM songs s
-                JOIN albums a ON s.album_id = a.id
-                WHERE s.id = ?;
+                JOIN albums a
+                    ON s.album_id = a.id
+                JOIN artists ar
+                    ON s.artist_id = ar.id
+                WHERE s.id = ?
+                  AND s.library_id = ?;
             """);
 
             statement.bind_text (1, song_id);
+            statement.bind_text (2, library_id);
 
             if (statement.step () != Sqlite.ROW) {
                 return null;
@@ -521,45 +569,56 @@ namespace Vesper.Data {
             string? cover = null;
             string? year = null;
 
-            if (statement.column_type (5) != Sqlite.NULL) {
-                cover = statement.column_text (5);
+            if (statement.column_type (8) != Sqlite.NULL) {
+                cover = statement.column_text (8);
             }
 
-            if (statement.column_type (6) != Sqlite.NULL) {
-                year = statement.column_text (6);
+            if (statement.column_type (9) != Sqlite.NULL) {
+                year = statement.column_text (9);
             }
 
-            var album = new Album (
+            var artist = new Artist (
                 statement.column_text (3),
                 statement.column_text (4),
+                statement.column_text (5)
+            );
+
+            var album = new Album (
+                statement.column_text (6),
+                statement.column_text (7),
                 cover,
                 year,
-                get_album_genres (statement.column_text (3)),
-                nullable_text (statement, 20),
-                nullable_text (statement, 21),
-                nullable_int64 (statement, 22)
+                get_album_genres (
+                    statement.column_text (6)
+                ),
+                nullable_text (statement, 23),
+                nullable_text (statement, 24),
+                nullable_int64 (statement, 25)
             );
 
             return new Song (
                 statement.column_text (0),
                 statement.column_text (1),
                 statement.column_text (2),
-                statement.column_int (7),
+                statement.column_int (10),
                 album,
-                nullable_int (statement, 8),
-                nullable_int (statement, 9),
-                nullable_int (statement, 10),
+                artist,
                 nullable_int (statement, 11),
                 nullable_int (statement, 12),
                 nullable_int (statement, 13),
                 nullable_int (statement, 14),
                 nullable_int (statement, 15),
-                nullable_text (statement, 16),
-                nullable_text (statement, 17),
-                nullable_int (statement, 18),
+                nullable_int (statement, 16),
+                nullable_int (statement, 17),
+                nullable_int64 (statement, 18),
                 nullable_text (statement, 19),
-                get_song_genres (statement.column_text (0)),
-                nullable_int64 (statement, 23)
+                nullable_text (statement, 20),
+                nullable_int (statement, 21),
+                nullable_text (statement, 22),
+                get_song_genres (
+                    statement.column_text (0)
+                ),
+                nullable_int64 (statement, 26)
             );
         }
 
@@ -627,18 +686,19 @@ namespace Vesper.Data {
                     year
                 );
         
+                var artist = new Artist (
+                    statement.column_text (9),
+                    statement.column_text (10),
+                    statement.column_text (0)
+                );
+        
                 var song = new Song (
                     statement.column_text (1),
                     statement.column_text (2),
                     statement.column_text (3),
                     statement.column_int (4),
-                    album
-                );
-        
-                var artist = new Artist (
-                    statement.column_text (9),
-                    statement.column_text (10),
-                    statement.column_text (0)
+                    album,
+                    artist
                 );
         
                 results.add (

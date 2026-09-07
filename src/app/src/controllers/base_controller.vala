@@ -26,7 +26,6 @@ namespace Vesper.App.Controllers {
 
         protected BaseController (TView view) {
             this.view = view;
-            connect_view ();
         }
 
         public void mount (Box root) {
@@ -52,7 +51,5 @@ namespace Vesper.App.Controllers {
                 ((BaseView)view).visible = ((BaseView)view).visible ? false : true;
             }
         }
-
-        protected abstract void connect_view ();
     }
 }

@@ -76,7 +76,8 @@ namespace Vesper.App {
                         files[i].get_path (),
                         gstreamer_url,
                         0,
-                        new Album ("", "", null, null)
+                        new Album ("", "", null, null),
+                        new Artist("", "", "")
                     )
                 );
             }

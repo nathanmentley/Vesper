@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2026 Nathan Mentley <nathanmentley@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://gnu.org>.
+ */
+
 using Gee;
 using GLib;
 using Sqlite;
@@ -108,6 +125,38 @@ namespace Vesper.Data {
             return entries;
         }
 
+        public Gee.List<string> get_recent_song_ids (int limit = 50) throws Error {
+            return get_ids ("""
+                SELECT song_id
+                FROM play_history
+                GROUP BY song_id
+                ORDER BY MAX(played_at) DESC, song_id
+                LIMIT ?;
+            """, limit);
+        }
+
+        public Gee.List<string> get_most_played_song_ids (int limit = 50) throws Error {
+            return get_ids ("""
+                SELECT song_id
+                FROM song_stats
+                WHERE play_count > 0
+                ORDER BY play_count DESC, last_played DESC, song_id
+                LIMIT ?;
+            """, limit);
+        }
+
+        public Gee.List<string> get_never_played_song_ids (int limit = 50) throws Error {
+            return get_ids ("""
+                SELECT s.id
+                FROM songs s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM song_stats ss WHERE ss.song_id = s.id
+                )
+                ORDER BY s.added_at DESC, s.id
+                LIMIT ?;
+            """, limit);
+        }
+
         public void cleanup (
             int64 retention_seconds = 90 * 24 * 60 * 60,
             int maximum_events = 1000
@@ -178,6 +227,16 @@ namespace Vesper.Data {
             statement.bind_int (3, duration);
             statement.bind_int (4, completed ? 1 : 0);
             step_done (statement);
+        }
+
+        private Gee.List<string> get_ids (string sql, int limit) throws Error {
+            var ids = new Gee.ArrayList<string> ();
+            var statement = prepare (sql);
+            statement.bind_int (1, limit);
+            while (statement.step () == Sqlite.ROW) {
+                ids.add (statement.column_text (0));
+            }
+            return ids;
         }
 
         private Sqlite.Statement prepare (string sql) throws Error {

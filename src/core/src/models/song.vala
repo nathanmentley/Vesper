@@ -25,6 +25,7 @@ namespace Vesper.Core.Models {
         public string stream_url { get; construct; }
         public int track_number { get; construct; }
         public Album album { get; construct; }
+        public Artist artist { get; construct; }
         public int64? added_at { get; private set; }
         public int? duration { get; private set; }
         public int? disc_number { get; private set; }
@@ -46,6 +47,7 @@ namespace Vesper.Core.Models {
             string stream_url,
             int track_number,
             Album album,
+            Artist artist,
             int? duration = null,
             int? disc_number = null,
             int? year = null,
@@ -67,6 +69,7 @@ namespace Vesper.Core.Models {
                 stream_url: stream_url,
                 track_number: track_number,
                 album: album,
+                artist: artist,
                 content_type: content_type,
                 file_suffix: file_suffix,
                 musicbrainz_recording_id: musicbrainz_recording_id

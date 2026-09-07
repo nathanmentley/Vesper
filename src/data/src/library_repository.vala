@@ -92,6 +92,10 @@ namespace Vesper.Data {
             string album_id
         ) throws Error;
 
+        public abstract Gee.List<Song> get_recently_added (
+            int limit = 50
+        ) throws Error;
+
         public abstract Song? get_track (
             string library_id,
             string song_id

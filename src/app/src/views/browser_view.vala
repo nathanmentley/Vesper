@@ -76,6 +76,7 @@ namespace Vesper.App.Views {
         private Artist[] artists = {};
         private Album[] albums = {};
         private Song[] songs = {};
+        private Artist? current_artist = null;
 
         private SearchResult[] search_results = {};
 
@@ -93,6 +94,8 @@ namespace Vesper.App.Views {
 
         private Button? desktop_add_album_button = null;
         private Button? mobile_add_album_button = null;
+        private Button? desktop_add_album_playlist_button = null;
+        private Button? mobile_add_album_playlist_button = null;
 
         /*
          * -------------------------------------------------------------
@@ -121,6 +124,13 @@ namespace Vesper.App.Views {
             Album album,
             Song[] songs
         );
+
+        public signal void add_album_to_playlist_requested (
+            Album album,
+            Song[] songs
+        );
+
+        public signal void add_song_to_playlist_requested (Song song);
 
         public BrowserView (
             Gtk.Window parent_window
@@ -315,7 +325,8 @@ namespace Vesper.App.Views {
             var artist_column =
                 create_desktop_column (
                     "Artists",
-                    desktop_artist_list
+                    desktop_artist_list,
+                    false
                 );
 
             /*
@@ -478,6 +489,9 @@ namespace Vesper.App.Views {
                 header.append (
                     desktop_add_album_button
                 );
+
+                desktop_add_album_playlist_button = create_add_album_playlist_button ();
+                header.append (desktop_add_album_playlist_button);
             }
 
             column.append (
@@ -539,7 +553,7 @@ namespace Vesper.App.Views {
                 create_mobile_page (
                     "Artists",
                     mobile_artist_list,
-                    false
+                    true
                 );
 
             /*
@@ -681,6 +695,9 @@ namespace Vesper.App.Views {
                     header.pack_end (
                         mobile_add_album_button
                     );
+
+                    mobile_add_album_playlist_button = create_add_album_playlist_button ();
+                    header.pack_end (mobile_add_album_playlist_button);
                 }
 
                 toolbar.add_top_bar (
@@ -939,7 +956,7 @@ namespace Vesper.App.Views {
                 new Button ();
 
             button.icon_name =
-                "list-add-symbolic";
+                "media-playback-start-symbolic";
 
             button.tooltip_text =
                 "Add album to queue";
@@ -952,6 +969,18 @@ namespace Vesper.App.Views {
                 add_current_album_to_queue ();
             });
 
+            return button;
+        }
+
+        private Button create_add_album_playlist_button () {
+            var button = new Button.from_icon_name ("list-add-symbolic");
+            button.tooltip_text = "Add album to playlist";
+            button.add_css_class ("flat");
+            button.clicked.connect (() => {
+                if (current_album != null) {
+                    add_album_to_playlist_requested (current_album, songs);
+                }
+            });
             return button;
         }
 
@@ -983,6 +1012,14 @@ namespace Vesper.App.Views {
             if (mobile_add_album_button != null) {
                 mobile_add_album_button.sensitive =
                     enabled;
+            }
+
+            bool playlist_enabled = enabled;
+            if (desktop_add_album_playlist_button != null) {
+                desktop_add_album_playlist_button.sensitive = playlist_enabled;
+            }
+            if (mobile_add_album_playlist_button != null) {
+                mobile_add_album_playlist_button.sensitive = playlist_enabled;
             }
         }
 
@@ -1229,6 +1266,8 @@ namespace Vesper.App.Views {
         ) {
             clear_albums ();
 
+            current_artist = artist;
+
             this.albums =
                 albums;
 
@@ -1282,6 +1321,10 @@ namespace Vesper.App.Views {
                 }
             );
 
+            desktop_row.add_to_playlist_requested.connect (
+                selected_song => add_song_to_playlist_requested (selected_song)
+            );
+
             desktop_song_list.append (
                 desktop_row
             );
@@ -1301,6 +1344,10 @@ namespace Vesper.App.Views {
                         selected_song
                     );
                 }
+            );
+
+            mobile_row.add_to_playlist_requested.connect (
+                selected_song => add_song_to_playlist_requested (selected_song)
             );
 
             mobile_song_list.append (
@@ -1347,6 +1394,10 @@ namespace Vesper.App.Views {
                 }
             );
 
+            desktop_row.add_to_playlist_requested.connect (
+                selected_song => add_song_to_playlist_requested (selected_song)
+            );
+
             desktop_song_list.append (
                 desktop_row
             );
@@ -1368,9 +1419,88 @@ namespace Vesper.App.Views {
                 }
             );
 
+            mobile_row.add_to_playlist_requested.connect (
+                selected_song => add_song_to_playlist_requested (selected_song)
+            );
+
             mobile_song_list.append (
                 mobile_row
             );
+        }
+
+        public void show_playlist_chooser (
+            Song song,
+            Gee.List<Playlist> playlists
+        ) {
+            if (playlists.size == 0) {
+                warning ("Cannot add '%s': no playlists exist", song.title);
+                return;
+            }
+
+            var chooser = new Gtk.ComboBoxText ();
+            foreach (Playlist playlist in playlists) {
+                chooser.append (playlist.id, playlist.name);
+            }
+            chooser.active = 0;
+
+            var dialog = new Adw.AlertDialog (
+                "Add to Playlist",
+                song.title
+            );
+            dialog.set_extra_child (chooser);
+            dialog.add_response ("cancel", "Cancel");
+            dialog.add_response ("add", "Add");
+            dialog.set_default_response ("add");
+            dialog.set_close_response ("cancel");
+            dialog.response.connect (response => {
+                if (response == "add" && chooser.active_id != null) {
+                    add_song_to_playlist_selected (
+                        song,
+                        chooser.active_id
+                    );
+                }
+            });
+            dialog.present (get_root () as Widget);
+        }
+
+        public signal void add_song_to_playlist_selected (
+            Song song,
+            string playlist_id
+        );
+
+        public signal void add_songs_to_playlist_selected (
+            Gee.List<Song> songs,
+            string playlist_id
+        );
+
+        public void show_songs_playlist_chooser (
+            Gee.List<Song> songs,
+            Gee.List<Playlist> playlists
+        ) {
+            if (songs.size == 0 || playlists.size == 0) {
+                return;
+            }
+
+            var chooser = new Gtk.ComboBoxText ();
+            foreach (Playlist playlist in playlists) {
+                chooser.append (playlist.id, playlist.name);
+            }
+            chooser.active = 0;
+
+            var dialog = new Adw.AlertDialog (
+                "Add Songs to Playlist",
+                "%d songs".printf (songs.size)
+            );
+            dialog.set_extra_child (chooser);
+            dialog.add_response ("cancel", "Cancel");
+            dialog.add_response ("add", "Add");
+            dialog.set_close_response ("cancel");
+            dialog.response.connect (response => {
+                if (response == "add" && chooser.active_id != null) {
+                    add_songs_to_playlist_selected (songs, chooser.active_id);
+                }
+            });
+            dialog.present (get_root () as Widget);
         }
 
         /*

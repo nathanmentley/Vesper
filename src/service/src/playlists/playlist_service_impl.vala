@@ -5,6 +5,14 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://gnu.org>.
  */
 
 using Gee;
@@ -149,6 +157,25 @@ namespace Vesper.Service.Playlists {
                     playlist_id,
                     e.message
                 );
+            }
+        }
+
+        public async void add_song_to_playlist (string playlist_id, Song song) {
+            try {
+                var songs = yield get_playlist_songs (playlist_id);
+                songs.add (song);
+                yield update_playlist (playlist_id, playlist_name (playlist_id), songs);
+            } catch (Error e) {
+                warning ("Failed to add song to playlist '%s': %s", playlist_id, e.message);
+            }
+        }
+
+        private string playlist_name (string playlist_id) {
+            try {
+                var playlist = repository.get_playlist (playlist_id);
+                return playlist != null ? playlist.name : "";
+            } catch (Error e) {
+                return "";
             }
         }
 

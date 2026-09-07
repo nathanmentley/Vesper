@@ -37,9 +37,11 @@ namespace Vesper.App.Controllers {
             this.settings_service = settings_service;
 
             load_settings ();
+
+            connect_view ();
         }
 
-        protected override void connect_view () {
+        private void connect_view () {
             view.connection_requested.connect (() => {
                 save_settings ();
 

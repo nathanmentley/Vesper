@@ -20,6 +20,7 @@ using GLib;
 using Vesper.Core.Models;
 
 using Vesper.Service.Libraries;
+using Vesper.Service.Playlists;
 
 using Vesper.App.Views;
 
@@ -28,9 +29,11 @@ namespace Vesper.App.Controllers {
         public signal void play_requested (Song song);
 
         private LibraryService library_service;
+        private PlaylistService playlist_service;
 
         public BrowserController (
             LibraryService library_service,
+            PlaylistService playlist_service,
             Gtk.Window parent_window
         ) {
             base (
@@ -38,9 +41,12 @@ namespace Vesper.App.Controllers {
             );
 
             this.library_service = library_service;
+            this.playlist_service = playlist_service;
+
+            connect_view ();
         }
 
-        protected override void connect_view () {
+        private void connect_view () {
             view.artist_selected.connect (
                 artist => load_albums.begin (artist)
             );
@@ -66,6 +72,22 @@ namespace Vesper.App.Controllers {
                         play_requested (song);
                     }
                 }
+            );
+
+            view.add_song_to_playlist_requested.connect (
+                song => show_playlist_chooser.begin (song)
+            );
+
+            view.add_song_to_playlist_selected.connect (
+                (song, playlist_id) => add_song_to_playlist.begin (song, playlist_id)
+            );
+
+            view.add_album_to_playlist_requested.connect (
+                (album, songs) => show_songs_playlist_chooser.begin (songs)
+            );
+
+            view.add_songs_to_playlist_selected.connect (
+                (songs, playlist_id) => add_songs_to_playlist.begin (songs, playlist_id)
             );
         }
 
@@ -149,6 +171,34 @@ namespace Vesper.App.Controllers {
             play_requested (
                 song
             );
+        }
+
+        private async void show_playlist_chooser (Song song) {
+            var playlists = yield playlist_service.get_playlists ();
+            view.show_playlist_chooser (song, playlists);
+        }
+
+        private async void add_song_to_playlist (
+            Song song,
+            string playlist_id
+        ) {
+            yield playlist_service.add_song_to_playlist (playlist_id, song);
+        }
+
+        private async void show_songs_playlist_chooser (Song[] songs) {
+            var playlists = yield playlist_service.get_playlists ();
+            var song_list = new Gee.ArrayList<Song> ();
+            song_list.add_all_array (songs);
+            view.show_songs_playlist_chooser (song_list, playlists);
+        }
+
+        private async void add_songs_to_playlist (
+            Gee.List<Song> songs,
+            string playlist_id
+        ) {
+            foreach (Song song in songs) {
+                yield playlist_service.add_song_to_playlist (playlist_id, song);
+            }
         }
     }
 }
