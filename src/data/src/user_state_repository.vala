@@ -22,5 +22,13 @@ namespace Vesper.Data {
             int64 retention_seconds = 90 * 24 * 60 * 60,
             int maximum_events = 1000
         ) throws Error;
+
+        public abstract bool is_favorite (string song_id) throws Error;
+
+        public abstract void add_favorite (string song_id) throws Error;
+
+        public abstract void remove_favorite (string song_id) throws Error;
+
+        public abstract Gee.List<string> get_favorite_song_ids () throws Error;
     }
 }

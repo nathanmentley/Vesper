@@ -82,7 +82,10 @@ namespace Vesper.App {
             media_service = new MediaServiceImpl (music_engine);
             settings_service = new SettingsServiceImpl (settings, setting_providers);
             playlist_service = new PlaylistServiceImpl (playlist_repository, library_service);
-            user_state_service = new UserStateServiceImpl (user_state_repository);
+            user_state_service = new UserStateServiceImpl (
+                user_state_repository,
+                library_service
+            );
         }
 
         private T get_first_plugin_impl<T> (

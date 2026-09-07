@@ -20,5 +20,13 @@ namespace Vesper.Service.UserState {
             int64 retention_seconds = 90 * 24 * 60 * 60,
             int maximum_events = 1000
         ) throws Error;
+
+        public abstract bool is_favorite (string song_id) throws Error;
+
+        public abstract void favorite (string song_id) throws Error;
+
+        public abstract void unfavorite (string song_id) throws Error;
+
+        public abstract async Gee.List<Song> get_favorites () throws Error;
     }
 }

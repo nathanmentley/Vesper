@@ -20,7 +20,7 @@ using Sqlite;
 
 namespace Vesper.Data {
     public class Migration : Object {
-        private const int CURRENT_VERSION = 6;
+        private const int CURRENT_VERSION = 7;
 
         public static void migrate (Sqlite.Database db) throws Error {
             int version = get_version (db);
@@ -34,7 +34,8 @@ namespace Vesper.Data {
                         migrate_v4 (db);
                         migrate_v5 (db);
                         migrate_v6 (db);
-                        version = 6;
+                        migrate_v7 (db);
+                        version = 7;
                         break;
 
                     case 1:
@@ -43,7 +44,8 @@ namespace Vesper.Data {
                         migrate_v4 (db);
                         migrate_v5 (db);
                         migrate_v6 (db);
-                        version = 6;
+                        migrate_v7 (db);
+                        version = 7;
                         break;
 
                     case 2:
@@ -51,25 +53,34 @@ namespace Vesper.Data {
                         migrate_v4 (db);
                         migrate_v5 (db);
                         migrate_v6 (db);
-                        version = 6;
+                        migrate_v7 (db);
+                        version = 7;
                         break;
 
                     case 3:
                         migrate_v4 (db);
                         migrate_v5 (db);
                         migrate_v6 (db);
-                        version = 6;
+                        migrate_v7 (db);
+                        version = 7;
                         break;
 
                     case 4:
                         migrate_v5 (db);
                         migrate_v6 (db);
-                        version = 6;
+                        migrate_v7 (db);
+                        version = 7;
                         break;
 
                     case 5:
                         migrate_v6 (db);
-                        version = 6;
+                        migrate_v7 (db);
+                        version = 7;
+                        break;
+
+                    case 6:
+                        migrate_v7 (db);
+                        version = 7;
                         break;
 
                     default:
@@ -478,6 +489,26 @@ namespace Vesper.Data {
                     ON play_history(song_id);
                 """);
                 set_version (db, 6);
+                exec (db, "COMMIT;");
+            } catch (Error e) {
+                exec (db, "ROLLBACK;");
+                throw e;
+            }
+        }
+
+        private static void migrate_v7 (
+            Sqlite.Database db
+        ) throws Error {
+            exec (db, "BEGIN TRANSACTION;");
+
+            try {
+                exec (db, """
+                    CREATE TABLE song_favorites (
+                        song_id TEXT PRIMARY KEY,
+                        FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+                    );
+                """);
+                set_version (db, 7);
                 exec (db, "COMMIT;");
             } catch (Error e) {
                 exec (db, "ROLLBACK;");

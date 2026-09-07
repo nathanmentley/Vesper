@@ -128,6 +128,41 @@ namespace Vesper.Data {
             step_done (statement);
         }
 
+        public bool is_favorite (string song_id) throws Error {
+            var statement = prepare (
+                "SELECT 1 FROM song_favorites WHERE song_id = ?;"
+            );
+            statement.bind_text (1, song_id);
+            return statement.step () == Sqlite.ROW;
+        }
+
+        public void add_favorite (string song_id) throws Error {
+            var statement = prepare (
+                "INSERT OR IGNORE INTO song_favorites (song_id) VALUES (?);"
+            );
+            statement.bind_text (1, song_id);
+            step_done (statement);
+        }
+
+        public void remove_favorite (string song_id) throws Error {
+            var statement = prepare (
+                "DELETE FROM song_favorites WHERE song_id = ?;"
+            );
+            statement.bind_text (1, song_id);
+            step_done (statement);
+        }
+
+        public Gee.List<string> get_favorite_song_ids () throws Error {
+            var song_ids = new Gee.ArrayList<string> ();
+            var statement = prepare (
+                "SELECT song_id FROM song_favorites ORDER BY song_id;"
+            );
+            while (statement.step () == Sqlite.ROW) {
+                song_ids.add (statement.column_text (0));
+            }
+            return song_ids;
+        }
+
         private void append_internal (
             string song_id,
             int64 played_at,

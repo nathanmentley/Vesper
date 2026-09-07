@@ -72,9 +72,27 @@ namespace Vesper.App.Tests {
             reloaded_repository.cleanup (100, 3);
             assert (reloaded_repository.get_recent (10).size == 3);
 
+            var favorites = new UserStateRepositoryImpl (reloaded_database);
+            assert (!favorites.is_favorite ("song-1"));
+            favorites.add_favorite ("song-1");
+            favorites.add_favorite ("song-1");
+            assert (favorites.is_favorite ("song-1"));
+            assert (favorites.get_favorite_song_ids ().size == 1);
+            assert (reloaded_repository.get ("song-1").play_count == 2);
+            assert (reloaded_repository.get_recent (10).size == 3);
+
+            var favorite_database = new DatabaseImpl (path);
+            var favorite_reload = new UserStateRepositoryImpl (favorite_database);
+            assert (favorite_reload.is_favorite ("song-1"));
+            favorite_reload.remove_favorite ("song-1");
+            favorite_reload.remove_favorite ("song-1");
+            assert (!favorite_reload.is_favorite ("song-1"));
+            favorite_reload.add_favorite ("song-1");
+
             reloaded_database.exec ("DELETE FROM songs WHERE id = 'song-1';");
             assert (reloaded_repository.get ("song-1") == null);
             assert (reloaded_repository.get_recent (10).size == 0);
+            assert (!favorite_reload.is_favorite ("song-1"));
         } catch (Error e) {
             warning ("User state test failed: %s", e.message);
             assert_not_reached ();
