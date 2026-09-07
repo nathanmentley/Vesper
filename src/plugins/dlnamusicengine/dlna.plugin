@@ -1,0 +1,5 @@
+[Plugin]
+Module=vesper-dlna-plugin
+Name=DLNA
+Description=DLNA music engine
+Loader=C

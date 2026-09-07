@@ -13,7 +13,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Vesper.  If not, see <https://gnu.org>.
 
-subdir('dlnamusicengine')
-subdir('subsonic')
-subdir('gstreamer')
-subdir('filesystem')
+dlna_plugin_sources = [
+  'src/entrypoint.vala',
+]
+
+dlna_vesper_plugin = library(
+  'vesper-dlna-plugin',
+  dlna_plugin_sources,
+  dependencies: [
+    glib_dep,
+    gobject_dep,
+    libpeas_dep,
+    gupnp_dep,
+    vesper_core_dep,
+  ],
+  vala_header: 'vesper-dlna-plugin.h',
+  vala_vapi: 'vesper-dlna-plugin.vapi',
+  install_vala_header: true,
+  install_vala_vapi: true,
+  install: true,
+)
+
+# configure_file(
+#   input: 'dlna.plugin',
+#   output: 'dlna.plugin',
+#   copy: true
+# )
