@@ -18,21 +18,16 @@
 using GLib;
 
 namespace Vesper.Core.Models {
-    public enum MixType {
-        FAVORITES,
-        RECENTLY_PLAYED,
-        RECENTLY_ADDED,
-        MOST_PLAYED,
-        NEVER_PLAYED
-    }
+    public interface MixKind : Object {}
 
     public class Mix : Object {
-        public MixType type;
+        public MixKind kind { get; construct; }
         public string name { get; construct; }
+        public string description { get; construct; }
+        public string icon { get; construct; }
 
-        public Mix (MixType type, string name) {
-            Object (name: name);
-            this.type = type;
+        public Mix (MixKind kind, string name, string description, string icon) {
+            Object (kind: kind, name: name, description: description, icon: icon);
         }
     }
 }

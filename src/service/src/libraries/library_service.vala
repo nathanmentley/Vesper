@@ -22,9 +22,9 @@ namespace Vesper.Service.Libraries {
     public interface LibraryService : Object {
         public abstract async Gee.List<Artist> get_artists ();
 
-        public abstract async Gee.List<Album> get_albums (string music_library_id, string artist_id);
+        public abstract async Gee.List<Album> get_albums (string? music_library_id, string artist_id);
 
-        public abstract async Gee.List<Song> get_tracks (string music_library_id, string artist_id, string album_id);
+        public abstract async Gee.List<Song> get_tracks (string? music_library_id, string artist_id, string album_id);
 
         public abstract async Gee.List<Song> get_recently_added (int limit = 50);
 

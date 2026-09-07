@@ -25,7 +25,7 @@ using Vesper.App.Views;
 
 namespace Vesper.App.Views {
     public class PlaylistView : BaseView {
-        public signal void mix_selected (MixType type);
+        public signal void mix_selected (Mix mix);
         public signal void playlist_selected (Playlist playlist);
         public signal void play_requested (Gee.List<Song> songs);
         public signal void shuffle_requested (Gee.List<Song> songs);
@@ -56,9 +56,22 @@ namespace Vesper.App.Views {
         private Gee.List<Song> detail_songs =
             new ArrayList<Song> ();
 
-        public PlaylistView (Gtk.Window parent_window) {
+        private Gee.List<Mix> mixes;
+
+        public PlaylistView (Gtk.Window parent_window, Gee.List<Mix> mixes) {
             base (parent_window);
+
+            this.mixes = mixes;
+
             build_ui ();
+        }
+
+        public void set_mixes (Gee.List<Mix> mixes) {
+            this.mixes = mixes;
+
+            Widget landing = build_landing ();
+            stack.remove (stack.get_child_by_name ("landing"));
+            stack.add_named (landing, "landing");
         }
 
         private void build_ui () {
@@ -184,45 +197,9 @@ namespace Vesper.App.Views {
             mixes_flow.column_spacing = 12;
             mixes_flow.hexpand = true;
 
-            add_mix_card (
-                mixes_flow,
-                MixType.FAVORITES,
-                "Favorites",
-                "Songs you've saved",
-                "starred-symbolic"
-            );
-
-            add_mix_card (
-                mixes_flow,
-                MixType.RECENTLY_PLAYED,
-                "Recently Played",
-                "Songs you've listened to lately",
-                "document-open-recent-symbolic"
-            );
-
-            add_mix_card (
-                mixes_flow,
-                MixType.RECENTLY_ADDED,
-                "Recently Added",
-                "New additions to your library",
-                "list-add-symbolic"
-            );
-
-            add_mix_card (
-                mixes_flow,
-                MixType.MOST_PLAYED,
-                "Most Played",
-                "Your most played songs",
-                "media-playlist-shuffle-symbolic"
-            );
-
-            add_mix_card (
-                mixes_flow,
-                MixType.NEVER_PLAYED,
-                "Never Played",
-                "Songs waiting to be discovered",
-                "media-playlist-symbolic"
-            );
+            foreach (Mix mix in mixes) {
+                add_mix_card (mixes_flow, mix);
+            }
 
             mixes_box.append (mixes_flow);
             sections.append (mixes_box);
@@ -282,13 +259,7 @@ namespace Vesper.App.Views {
             return content;
         }
 
-        private void add_mix_card (
-            FlowBox flow,
-            MixType type,
-            string name,
-            string description,
-            string icon_name
-        ) {
+        private void add_mix_card (FlowBox flow, Mix mix) {
             var button = new Button ();
 
             /*
@@ -316,9 +287,7 @@ namespace Vesper.App.Views {
             content.set_margin_start (16);
             content.set_margin_end (16);
 
-            var icon = new Image.from_icon_name (
-                icon_name
-            );
+            var icon = new Image.from_icon_name (mix.icon);
 
             icon.pixel_size = 32;
             icon.valign = Align.CENTER;
@@ -333,7 +302,7 @@ namespace Vesper.App.Views {
             text.valign = Align.CENTER;
             text.hexpand = true;
 
-            var title = new Label (name);
+            var title = new Label (mix.name);
             title.halign = Align.START;
             title.ellipsize =
                 Pango.EllipsizeMode.END;
@@ -341,7 +310,7 @@ namespace Vesper.App.Views {
             title.add_css_class ("heading");
 
             var subtitle = new Label (
-                description
+                mix.description
             );
 
             subtitle.halign = Align.START;
@@ -367,7 +336,7 @@ namespace Vesper.App.Views {
             button.set_child (content);
 
             button.clicked.connect (() => {
-                mix_selected (type);
+                mix_selected (mix);
             });
 
             var child = new FlowBoxChild ();
@@ -608,8 +577,10 @@ namespace Vesper.App.Views {
                     var row = new ActionRow ();
 
                     row.title = song.title;
-                    row.subtitle =
-                        song.album.name;
+                    row.subtitle = "%s - %s".printf (
+                        song.artist.name,
+                        song.album.name
+                    );
 
                     row.activatable = true;
 

@@ -20,8 +20,10 @@ using Vesper.Core.Models;
 
 namespace Vesper.Service.Mixes {
     public interface MixService : Object {
+        public abstract async Gee.List<Mix> get_mixes () throws Error;
+
         public abstract async Gee.List<Song> get_mix_songs (
-            MixType type,
+            Mix mix,
             int limit = 100
         ) throws Error;
     }

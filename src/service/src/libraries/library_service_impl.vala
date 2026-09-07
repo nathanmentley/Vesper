@@ -112,15 +112,52 @@ namespace Vesper.Service.Libraries {
                 }
             }
 
+            result.sort ((first, second) => {
+                string first_key = artist_sort_key (first.name);
+                string second_key = artist_sort_key (second.name);
+                int comparison = first_key.collate (second_key);
+
+                if (comparison != 0) {
+                    return comparison;
+                }
+
+                return first.name.collate (second.name);
+            });
+
             return result;
         }
 
-        public async Gee.List<Album> get_albums (string music_library_id, string artist_id) {
+        private string artist_sort_key (string name) {
+            string key = name.strip ().down ();
+
+            string[] articles = {
+                "the ",
+                "a ",
+                "an ",
+                "la ",
+                "les ",
+                "el ",
+                "los ",
+                "las "
+            };
+
+            foreach (string article in articles) {
+                if (key.has_prefix (article)) {
+                    return key.substring (article.length);
+                }
+            }
+
+            return key;
+        }
+
+        public async Gee.List<Album> get_albums (string? music_library_id, string artist_id) {
             Gee.List<Album> result = new Gee.ArrayList<Album> ();
 
             foreach (MusicLibrary music_library in music_libraries) {
-                if (music_library.get_id () != music_library_id) {
-                    continue;
+                if (music_library_id != null) {
+                    if (music_library.get_id () != music_library_id) {
+                        continue;
+                    }
                 }
 
                 Gee.List<Album> albums = library_repository.get_albums (artist_id);
@@ -133,12 +170,14 @@ namespace Vesper.Service.Libraries {
             return result;
         }
 
-        public async Gee.List<Song> get_tracks (string music_library_id, string artist_id, string album_id) {
+        public async Gee.List<Song> get_tracks (string? music_library_id, string artist_id, string album_id) {
             Gee.List<Song> result = new Gee.ArrayList<Song> ();
 
             foreach (MusicLibrary music_library in music_libraries) {
-                if (music_library.get_id () != music_library_id) {
-                    continue;
+                if (music_library_id != null) {
+                    if (music_library.get_id () != music_library_id) {
+                        continue;
+                    }
                 }
 
                 Gee.List<Song> tracks = library_repository.get_tracks (album_id);

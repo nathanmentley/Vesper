@@ -61,7 +61,10 @@ namespace Vesper.App.Components {
             title_lines = 1;
 
             if (song.album != null) {
-                subtitle = song.album.name;
+                subtitle = "%s - %s".printf (
+                    song.artist.name,
+                    song.album.name
+                );
                 subtitle_lines = 1;
             }
 

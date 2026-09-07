@@ -35,15 +35,26 @@ namespace Vesper.App.Controllers {
             MixService mix_service,
             Gtk.Window parent_window
         ) {
-            base (new PlaylistView (parent_window));
+            base (new PlaylistView (parent_window, new ArrayList<Mix> ()));
             this.playlist_service = playlist_service;
             this.mix_service = mix_service;
 
             connect_view ();
+            load_content.begin ();
+        }
+
+        private async void load_content () {
+            try {
+                view.set_mixes (yield mix_service.get_mixes ());
+            } catch (Error e) {
+                view.show_error ("Failed to load mixes: " + e.message);
+            }
+
+            yield load_playlists ();
         }
 
         private void connect_view () {
-            view.mix_selected.connect (type => load_mix.begin (type));
+            view.mix_selected.connect (mix => load_mix.begin (mix));
             view.playlist_selected.connect (playlist => load_playlist.begin (playlist));
             view.play_requested.connect (songs => play_requested (songs));
             view.shuffle_requested.connect (songs => shuffle_requested (songs));
@@ -62,10 +73,10 @@ namespace Vesper.App.Controllers {
             }
         }
 
-        private async void load_mix (MixType type) {
+        private async void load_mix (Mix mix) {
             try {
-                var songs = yield mix_service.get_mix_songs (type);
-                view.show_detail (mix_name (type), songs, false, null);
+                var songs = yield mix_service.get_mix_songs (mix);
+                view.show_detail (mix.name, songs, false, null);
             } catch (Error e) {
                 view.show_error ("Failed to load mix: " + e.message);
             }
@@ -106,17 +117,6 @@ namespace Vesper.App.Controllers {
         private async void delete_playlist (Playlist playlist) {
             yield playlist_service.delete_playlist (playlist.id);
             yield load_playlists ();
-        }
-
-        private string mix_name (MixType type) {
-            switch (type) {
-                case MixType.FAVORITES: return "Favorites";
-                case MixType.RECENTLY_PLAYED: return "Recently Played";
-                case MixType.RECENTLY_ADDED: return "Recently Added";
-                case MixType.MOST_PLAYED: return "Most Played";
-                case MixType.NEVER_PLAYED: return "Never Played";
-                default: return "Mix";
-            }
         }
     }
 }
