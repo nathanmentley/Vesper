@@ -20,7 +20,7 @@ using Sqlite;
 
 namespace Vesper.Data {
     public class Migration : Object {
-        private const int CURRENT_VERSION = 5;
+        private const int CURRENT_VERSION = 6;
 
         public static void migrate (Sqlite.Database db) throws Error {
             int version = get_version (db);
@@ -33,7 +33,8 @@ namespace Vesper.Data {
                         migrate_v3 (db);
                         migrate_v4 (db);
                         migrate_v5 (db);
-                        version = 5;
+                        migrate_v6 (db);
+                        version = 6;
                         break;
 
                     case 1:
@@ -41,25 +42,34 @@ namespace Vesper.Data {
                         migrate_v3 (db);
                         migrate_v4 (db);
                         migrate_v5 (db);
-                        version = 5;
+                        migrate_v6 (db);
+                        version = 6;
                         break;
 
                     case 2:
                         migrate_v3 (db);
                         migrate_v4 (db);
                         migrate_v5 (db);
-                        version = 5;
+                        migrate_v6 (db);
+                        version = 6;
                         break;
 
                     case 3:
                         migrate_v4 (db);
                         migrate_v5 (db);
-                        version = 5;
+                        migrate_v6 (db);
+                        version = 6;
                         break;
 
                     case 4:
                         migrate_v5 (db);
-                        version = 5;
+                        migrate_v6 (db);
+                        version = 6;
+                        break;
+
+                    case 5:
+                        migrate_v6 (db);
+                        version = 6;
                         break;
 
                     default:
@@ -433,6 +443,41 @@ namespace Vesper.Data {
                 exec (db, "ALTER TABLE songs ADD COLUMN added_at INTEGER;");
 
                 set_version (db, 5);
+                exec (db, "COMMIT;");
+            } catch (Error e) {
+                exec (db, "ROLLBACK;");
+                throw e;
+            }
+        }
+
+        private static void migrate_v6 (
+            Sqlite.Database db
+        ) throws Error {
+            exec (db, "BEGIN TRANSACTION;");
+
+            try {
+                exec (db, """
+                    CREATE TABLE song_stats (
+                        song_id TEXT PRIMARY KEY,
+                        play_count INTEGER NOT NULL DEFAULT 0,
+                        total_play_seconds INTEGER NOT NULL DEFAULT 0,
+                        last_played INTEGER,
+                        FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+                    );
+                    CREATE TABLE play_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        song_id TEXT NOT NULL,
+                        played_at INTEGER NOT NULL,
+                        duration INTEGER NOT NULL,
+                        completed INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+                    );
+                    CREATE INDEX idx_play_history_played_at
+                    ON play_history(played_at DESC);
+                    CREATE INDEX idx_play_history_song
+                    ON play_history(song_id);
+                """);
+                set_version (db, 6);
                 exec (db, "COMMIT;");
             } catch (Error e) {
                 exec (db, "ROLLBACK;");

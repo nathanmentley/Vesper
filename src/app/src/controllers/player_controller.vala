@@ -22,6 +22,7 @@ using GLib;
 using Vesper.Core.Models;
 using Vesper.Core.Plugins;
 using Vesper.Service.Media;
+using Vesper.Service.UserState;
 
 using Vesper.App.Views;
 
@@ -35,12 +36,19 @@ namespace Vesper.App.Controllers {
         public signal void repeat_requested (bool enabled);
 
         private MediaService music;
+        private UserStateService user_state;
+        private Song? current_song;
+        private bool current_song_recorded = false;
         private uint position_timer_id = 0;
 
         private bool shuffle_enabled = false;
         private bool repeat_enabled = false;
 
-        public PlayerController (MediaService music, Gtk.Window parent_window) {
+        public PlayerController (
+            MediaService music,
+            UserStateService user_state,
+            Gtk.Window parent_window
+        ) {
             base(new PlayerView(parent_window));
 
             this.view.set_shuffle_active (shuffle_enabled);
@@ -48,9 +56,11 @@ namespace Vesper.App.Controllers {
             this.view.set_volume (1.0);
 
             this.music = music;
+            this.user_state = user_state;
 
             music.state_changed.connect (status => {
                 if (status == PlaybackState.FINISHED) {
+                    record_finished_play ();
                     stop_position_timer ();
                     set_status ("Finished");
                     song_finished ();
@@ -101,6 +111,9 @@ namespace Vesper.App.Controllers {
 
             stop ();
 
+            current_song = song;
+            current_song_recorded = false;
+
             try {
                 music.set_source (uri);
             } catch (GLib.Error e) {
@@ -146,6 +159,35 @@ namespace Vesper.App.Controllers {
             music.pause_player ();
 
             set_status ("Paused");
+        }
+
+        private void record_finished_play () {
+            if (current_song == null || current_song_recorded) {
+                return;
+            }
+
+            int64 duration_ns = music.get_position ();
+            int duration = (int) (duration_ns / Gst.SECOND);
+
+            if (duration < 0) {
+                duration = 0;
+            }
+
+            try {
+                user_state.record_play (
+                    current_song.id,
+                    new GLib.DateTime.now_utc ().to_unix (),
+                    duration,
+                    true
+                );
+                current_song_recorded = true;
+            } catch (Error e) {
+                warning (
+                    "Failed to record completed play for '%s': %s",
+                    current_song.id,
+                    e.message
+                );
+            }
         }
 
         private void seek (int64 position_ns) {

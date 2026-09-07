@@ -21,6 +21,8 @@ data_sources = [
   'src/library_repository_impl.vala',
   'src/library_repository.vala',
   'src/migrations.vala',
+  'src/user_state_repository.vala',
+  'src/user_state_repository_impl.vala',
   'src/playlist_repository_impl.vala',
   'src/playlist_repository.vala',
 ]

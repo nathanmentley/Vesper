@@ -28,6 +28,7 @@ using Vesper.Service.Media;
 using Vesper.Service.Playlists;
 using Vesper.Service.Plugins;
 using Vesper.Service.Settings;
+using Vesper.Service.UserState;
 
 using Vesper.App.Windows;
 
@@ -37,6 +38,7 @@ namespace Vesper.App {
         public MediaService media_service { get; private set; }
         public SettingsService settings_service { get; private set; }
         public PlaylistService playlist_service { get; private set; }
+        public UserStateService user_state_service { get; private set; }
 
         public IOC () {
             Object ();
@@ -58,6 +60,7 @@ namespace Vesper.App {
             ArtworkCacheRepository artwork_cache_repository = new ArtworkCacheRepositoryImpl (database);
             PlaylistRepository playlist_repository = new PlaylistRepositoryImpl (database);
             LibraryRepository library_repository = new LibraryRepositoryImpl (database);
+            UserStateRepository user_state_repository = new UserStateRepositoryImpl (database);
 
             SettingDefinition plugin_directory_setting = new SettingDefinition (
                 "general",
@@ -79,6 +82,7 @@ namespace Vesper.App {
             media_service = new MediaServiceImpl (music_engine);
             settings_service = new SettingsServiceImpl (settings, setting_providers);
             playlist_service = new PlaylistServiceImpl (playlist_repository, library_service);
+            user_state_service = new UserStateServiceImpl (user_state_repository);
         }
 
         private T get_first_plugin_impl<T> (

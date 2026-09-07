@@ -28,6 +28,7 @@ using Vesper.Service.Media;
 using Vesper.Service.Playlists;
 using Vesper.Service.Plugins;
 using Vesper.Service.Settings;
+using Vesper.Service.UserState;
 
 using Vesper.App.Controllers;
 using Vesper.App.Models;
@@ -82,7 +83,11 @@ namespace Vesper.App.Windows {
              */
             this.browser_controller = new BrowserController (ioc.library_service, this);
             this.now_playing_controller = new NowPlayingController (ioc.library_service, this);
-            this.player_controller = new PlayerController (ioc.media_service, this);
+            this.player_controller = new PlayerController (
+                ioc.media_service,
+                ioc.user_state_service,
+                this
+            );
             this.playlist_controller = new PlaylistController (playlist, ioc.playlist_service, this);
             this.settings_controller = new SettingsController (ioc.settings_service, this);
 

@@ -5,6 +5,84 @@ using Vesper.Core.Models;
 using Vesper.Data;
 
 namespace Vesper.App.Tests {
+    void test_user_state_round_trip_and_cleanup () {
+        string path = "/tmp/vesper-user-state-test.db";
+        FileUtils.remove (path);
+
+        try {
+            var database = new DatabaseImpl (path);
+            var library_repository = new LibraryRepositoryImpl (database);
+            var repository = new UserStateRepositoryImpl (database);
+            library_repository.save_library ("library-1", "provider-1", "Library", 0);
+            library_repository.save_artist (
+                "library-1",
+                new Artist ("artist-1", "Artist A", "library-1")
+            );
+            library_repository.save_album (
+                "library-1",
+                "artist-1",
+                new Album ("album-1", "Album A")
+            );
+            library_repository.save_song (
+                "library-1",
+                "artist-1",
+                new Song (
+                    "song-1",
+                    "Song A",
+                    "stream://song-1",
+                    1,
+                    new Album ("album-1", "Album A")
+                )
+            );
+
+            int64 now = new DateTime.now_utc ().to_unix ();
+            repository.record_play ("song-1", now - 10, 12, false);
+            repository.record_play ("song-1", now - 5, 34, true);
+
+            var stats = repository.get ("song-1");
+            assert (stats != null);
+            assert (stats.play_count == 2);
+            assert (stats.total_play_seconds == 46);
+            assert (stats.last_played == now - 5);
+            assert (repository.get_recent (10).size == 2);
+            assert (repository.get_recent (10)[0].played_at == now - 5);
+            assert (repository.get_recent (10)[0].completed);
+
+            var reloaded_database = new DatabaseImpl (path);
+            var reloaded_repository = new UserStateRepositoryImpl (reloaded_database);
+            assert (reloaded_repository.get ("song-1").play_count == 2);
+            assert (reloaded_repository.get_recent (10).size == 2);
+
+            for (int index = 0; index < 5; index++) {
+                reloaded_repository.append (
+                    new PlayHistoryEntry (
+                        0,
+                        "song-1",
+                        now + index,
+                        1,
+                        false
+                    )
+                );
+            }
+
+            reloaded_repository.cleanup (100, 3);
+            assert (reloaded_repository.get_recent (10).size == 3);
+            assert (reloaded_repository.get_recent (10)[0].played_at == now + 4);
+            assert (reloaded_repository.get ("song-1").play_count == 2);
+            reloaded_repository.cleanup (100, 3);
+            assert (reloaded_repository.get_recent (10).size == 3);
+
+            reloaded_database.exec ("DELETE FROM songs WHERE id = 'song-1';");
+            assert (reloaded_repository.get ("song-1") == null);
+            assert (reloaded_repository.get_recent (10).size == 0);
+        } catch (Error e) {
+            warning ("User state test failed: %s", e.message);
+            assert_not_reached ();
+        }
+
+        FileUtils.remove (path);
+    }
+
     void test_metadata_round_trip () {
         string path = "/tmp/vesper-metadata-test.db";
         FileUtils.remove (path);
@@ -94,6 +172,10 @@ namespace Vesper.App.Tests {
         Test.add_func (
             "/vesper/data/metadata/round_trip",
             test_metadata_round_trip
+        );
+        Test.add_func (
+            "/vesper/data/user_state/round_trip_and_cleanup",
+            test_user_state_round_trip_and_cleanup
         );
     }
 }
