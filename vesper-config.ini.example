@@ -2,9 +2,6 @@
 plugin-directory=./build/src/plugins
 database-directory=./data.db
 
-[gstreamer-1]
-server-url=33
-
 [subsonic-1]
 server-url=https://navidrome.example.fake
 username=username

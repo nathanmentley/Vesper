@@ -28,7 +28,6 @@ namespace Vesper.Plugins.GStreamer {
         GLib.Object,
         Vesper.Core.Plugins.Plugin,
         MusicEngine,
-        SettingsProvider,
         ConfigurablePlugin {
 
         private Gst.Element? player = null;
@@ -62,26 +61,7 @@ namespace Vesper.Plugins.GStreamer {
             }
         }
 
-        public void configure (SettingsEngine settings) {
-            // GStreamer is initialized once when the plugin
-            // module is registered.
-        }
-
-        public Gee.List<SettingDefinition> get_setting_definitions () {
-            var settings = new Gee.ArrayList<SettingDefinition> ();
-
-            settings.add (
-                new SettingDefinition (
-                    key.id,
-                    "server-url",
-                    "GStreamer Setting",
-                    "GStreamer Setting that is a noop",
-                    SettingType.STRING
-                )
-            );
-
-            return settings;
-        }
+        public void configure (SettingsEngine settings) {}
 
         public void set_source (string uri) {
             stop_player ();
@@ -381,6 +361,4 @@ public void peas_register_types (TypeModule module) {
     Peas.ObjectModule object_module = module as Peas.ObjectModule;
 
     object_module.register_extension_type (typeof (MusicEngine), typeof (GStreamerMusicEngine));
-
-    object_module.register_extension_type (typeof (SettingsProvider), typeof (GStreamerMusicEngine));
 }
