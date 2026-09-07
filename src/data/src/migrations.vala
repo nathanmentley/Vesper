@@ -20,7 +20,7 @@ using Sqlite;
 
 namespace Vesper.Data {
     public class Migration : Object {
-        private const int CURRENT_VERSION = 3;
+        private const int CURRENT_VERSION = 4;
 
         public static void migrate (Sqlite.Database db) throws Error {
             int version = get_version (db);
@@ -31,18 +31,26 @@ namespace Vesper.Data {
                         migrate_v1 (db);
                         migrate_v2 (db);
                         migrate_v3 (db);
-                        version = 3;
+                        migrate_v4 (db);
+                        version = 4;
                         break;
 
                     case 1:
                         migrate_v2 (db);
                         migrate_v3 (db);
-                        version = 3;
+                        migrate_v4 (db);
+                        version = 4;
                         break;
 
                     case 2:
                         migrate_v3 (db);
-                        version = 3;
+                        migrate_v4 (db);
+                        version = 4;
+                        break;
+
+                    case 3:
+                        migrate_v4 (db);
+                        version = 4;
                         break;
 
                     default:
@@ -337,6 +345,67 @@ namespace Vesper.Data {
 
                 set_version (db, 3);
 
+                exec (db, "COMMIT;");
+            } catch (Error e) {
+                exec (db, "ROLLBACK;");
+                throw e;
+            }
+        }
+
+        private static void migrate_v4 (
+            Sqlite.Database db
+        ) throws Error {
+            exec (db, "BEGIN TRANSACTION;");
+
+            try {
+                exec (db, "ALTER TABLE artists ADD COLUMN musicbrainz_artist_id TEXT;");
+                exec (db, "ALTER TABLE albums ADD COLUMN musicbrainz_release_id TEXT;");
+                exec (db, "ALTER TABLE albums ADD COLUMN musicbrainz_release_group_id TEXT;");
+                exec (db, "ALTER TABLE songs ADD COLUMN duration INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN disc_number INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN year INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN bit_rate INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN bit_depth INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN sample_rate INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN channel_count INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN file_size INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN content_type TEXT;");
+                exec (db, "ALTER TABLE songs ADD COLUMN file_suffix TEXT;");
+                exec (db, "ALTER TABLE songs ADD COLUMN bpm INTEGER;");
+                exec (db, "ALTER TABLE songs ADD COLUMN musicbrainz_recording_id TEXT;");
+
+                exec (db, """
+                    CREATE TABLE genres (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL UNIQUE
+                    );
+                    CREATE TABLE artist_genres (
+                        artist_id TEXT NOT NULL,
+                        genre_id TEXT NOT NULL,
+                        PRIMARY KEY (artist_id, genre_id),
+                        FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE,
+                        FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+                    );
+                    CREATE TABLE album_genres (
+                        album_id TEXT NOT NULL,
+                        genre_id TEXT NOT NULL,
+                        PRIMARY KEY (album_id, genre_id),
+                        FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+                        FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+                    );
+                    CREATE TABLE song_genres (
+                        song_id TEXT NOT NULL,
+                        genre_id TEXT NOT NULL,
+                        PRIMARY KEY (song_id, genre_id),
+                        FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE,
+                        FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+                    );
+                    CREATE INDEX idx_artist_genres_genre ON artist_genres(genre_id);
+                    CREATE INDEX idx_album_genres_genre ON album_genres(genre_id);
+                    CREATE INDEX idx_song_genres_genre ON song_genres(genre_id);
+                """);
+
+                set_version (db, 4);
                 exec (db, "COMMIT;");
             } catch (Error e) {
                 exec (db, "ROLLBACK;");

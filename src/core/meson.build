@@ -14,6 +14,7 @@
 # along with Vesper.  If not, see <https://gnu.org>.
 
 core_sources = [
+  'src/models/genre.vala',
   'src/models/album.vala',
   'src/models/artist.vala',
   'src/models/library.vala',

@@ -16,15 +16,30 @@
  */
 
 using GLib;
+using Gee;
 
 namespace Vesper.Core.Models {
     public class Artist : Object {
         public string id { get; construct; }
         public string name { get; construct; }
         public string library_id { get; construct; }
+        public Gee.List<Genre> genres { get; private set; }
+        public string? musicbrainz_artist_id { get; construct; }
 
-        public Artist (string id, string name, string library_id) {
-            Object (id: id, name: name, library_id: library_id);
+        public Artist (
+            string id,
+            string name,
+            string library_id,
+            Gee.List<Genre>? genres = null,
+            string? musicbrainz_artist_id = null
+        ) {
+            Object (
+                id: id,
+                name: name,
+                library_id: library_id,
+                musicbrainz_artist_id: musicbrainz_artist_id
+            );
+            this.genres = genres ?? new Gee.ArrayList<Genre> ();
         }
     }
 }

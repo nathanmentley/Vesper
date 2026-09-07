@@ -65,19 +65,23 @@ namespace Vesper.Data {
                 INSERT INTO artists (
                     id,
                     library_id,
-                    name
+                    name,
+                    musicbrainz_artist_id
                 )
-                VALUES (?, ?, ?)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     library_id = excluded.library_id,
-                    name = excluded.name;
+                    name = excluded.name,
+                    musicbrainz_artist_id = excluded.musicbrainz_artist_id;
             """);
 
             statement.bind_text (1, artist.id);
             statement.bind_text (2, library_id);
             statement.bind_text (3, artist.name);
+            bind_text (statement, 4, artist.musicbrainz_artist_id);
 
             step_done (statement);
+            save_artist_genres (artist.id, artist.genres);
         }
 
         public void save_album (
@@ -92,15 +96,19 @@ namespace Vesper.Data {
                     artist_id,
                     name,
                     year,
-                    cover
+                    cover,
+                    musicbrainz_release_id,
+                    musicbrainz_release_group_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     library_id = excluded.library_id,
                     artist_id = excluded.artist_id,
                     name = excluded.name,
                     year = excluded.year,
-                    cover = excluded.cover;
+                    cover = excluded.cover,
+                    musicbrainz_release_id = excluded.musicbrainz_release_id,
+                    musicbrainz_release_group_id = excluded.musicbrainz_release_group_id;
             """);
 
             statement.bind_text (1, album.id);
@@ -120,7 +128,11 @@ namespace Vesper.Data {
                 statement.bind_null (6);
             }
 
+            bind_text (statement, 7, album.musicbrainz_release_id);
+            bind_text (statement, 8, album.musicbrainz_release_group_id);
+
             step_done (statement);
+            save_album_genres (album.id, album.genres);
         }
 
         public void save_song (
@@ -136,16 +148,40 @@ namespace Vesper.Data {
                     album_id,
                     title,
                     stream_url,
-                    track_number
+                    track_number,
+                    duration,
+                    disc_number,
+                    year,
+                    bit_rate,
+                    bit_depth,
+                    sample_rate,
+                    channel_count,
+                    file_size,
+                    content_type,
+                    file_suffix,
+                    bpm,
+                    musicbrainz_recording_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     library_id = excluded.library_id,
                     artist_id = excluded.artist_id,
                     album_id = excluded.album_id,
                     title = excluded.title,
                     stream_url = excluded.stream_url,
-                    track_number = excluded.track_number;
+                    track_number = excluded.track_number,
+                    duration = excluded.duration,
+                    disc_number = excluded.disc_number,
+                    year = excluded.year,
+                    bit_rate = excluded.bit_rate,
+                    bit_depth = excluded.bit_depth,
+                    sample_rate = excluded.sample_rate,
+                    channel_count = excluded.channel_count,
+                    file_size = excluded.file_size,
+                    content_type = excluded.content_type,
+                    file_suffix = excluded.file_suffix,
+                    bpm = excluded.bpm,
+                    musicbrainz_recording_id = excluded.musicbrainz_recording_id;
             """);
 
             statement.bind_text (1, song.id);
@@ -156,7 +192,70 @@ namespace Vesper.Data {
             statement.bind_text (6, song.stream_url);
             statement.bind_int (7, song.track_number);
 
+            bind_int (statement, 8, song.duration);
+            bind_int (statement, 9, song.disc_number);
+            bind_int (statement, 10, song.year);
+            bind_int (statement, 11, song.bit_rate);
+            bind_int (statement, 12, song.bit_depth);
+            bind_int (statement, 13, song.sample_rate);
+            bind_int (statement, 14, song.channel_count);
+            bind_int64 (statement, 15, song.file_size);
+            bind_text (statement, 16, song.content_type);
+            bind_text (statement, 17, song.file_suffix);
+            bind_int (statement, 18, song.bpm);
+            bind_text (statement, 19, song.musicbrainz_recording_id);
+
             step_done (statement);
+            save_song_genres (song.id, song.genres);
+        }
+
+        public void save_genre (Genre genre) throws Error {
+            var statement = prepare ("""
+                INSERT OR IGNORE INTO genres (id, name) VALUES (?, ?);
+            """);
+            statement.bind_text (1, genre.id);
+            statement.bind_text (2, genre.name);
+            step_done (statement);
+        }
+
+        public Genre? get_genre (string genre_id) throws Error {
+            var statement = prepare ("SELECT id, name FROM genres WHERE id = ?;");
+            statement.bind_text (1, genre_id);
+            if (statement.step () != Sqlite.ROW) {
+                return null;
+            }
+            return new Genre.with_id (
+                statement.column_text (0),
+                statement.column_text (1)
+            );
+        }
+
+        public Gee.List<Genre> get_genres () throws Error {
+            return get_genres_from ("SELECT id, name FROM genres ORDER BY name;");
+        }
+
+        public void save_artist_genres (string artist_id, Gee.List<Genre> genres) throws Error {
+            save_entity_genres ("artist_genres", "artist_id", artist_id, genres);
+        }
+
+        public Gee.List<Genre> get_artist_genres (string artist_id) throws Error {
+            return get_entity_genres ("artist_genres", "artist_id", artist_id);
+        }
+
+        public void save_album_genres (string album_id, Gee.List<Genre> genres) throws Error {
+            save_entity_genres ("album_genres", "album_id", album_id, genres);
+        }
+
+        public Gee.List<Genre> get_album_genres (string album_id) throws Error {
+            return get_entity_genres ("album_genres", "album_id", album_id);
+        }
+
+        public void save_song_genres (string song_id, Gee.List<Genre> genres) throws Error {
+            save_entity_genres ("song_genres", "song_id", song_id, genres);
+        }
+
+        public Gee.List<Genre> get_song_genres (string song_id) throws Error {
+            return get_entity_genres ("song_genres", "song_id", song_id);
         }
 
         public Library? get_library (
@@ -195,7 +294,8 @@ namespace Vesper.Data {
                 SELECT
                     id,
                     name,
-                    library_id
+                    library_id,
+                    musicbrainz_artist_id
                 FROM artists
                 WHERE library_id = ?
                 ORDER BY name;
@@ -208,7 +308,9 @@ namespace Vesper.Data {
                     new Artist (
                         statement.column_text (0),
                         statement.column_text (1),
-                        statement.column_text (2)
+                        statement.column_text (2),
+                        get_artist_genres (statement.column_text (0)),
+                        nullable_text (statement, 3)
                     )
                 );
             }
@@ -226,7 +328,9 @@ namespace Vesper.Data {
                     id,
                     name,
                     cover,
-                    year
+                    year,
+                    musicbrainz_release_id,
+                    musicbrainz_release_group_id
                 FROM albums
                 WHERE artist_id = ?
                 ORDER BY year ASC, name ASC;
@@ -251,7 +355,10 @@ namespace Vesper.Data {
                         statement.column_text (0),
                         statement.column_text (1),
                         cover,
-                        year
+                        year,
+                        get_album_genres (statement.column_text (0)),
+                        nullable_text (statement, 4),
+                        nullable_text (statement, 5)
                     )
                 );
             }
@@ -269,7 +376,9 @@ namespace Vesper.Data {
                     id,
                     name,
                     cover,
-                    year
+                    year,
+                    musicbrainz_release_id,
+                    musicbrainz_release_group_id
                 FROM albums
                 WHERE id = ?
             """);
@@ -295,7 +404,10 @@ namespace Vesper.Data {
                 album_statement.column_text (0),
                 album_statement.column_text (1),
                 cover,
-                year
+                year,
+                get_album_genres (album_statement.column_text (0)),
+                nullable_text (album_statement, 4),
+                nullable_text (album_statement, 5)
             );
 
             var statement = prepare ("""
@@ -303,7 +415,19 @@ namespace Vesper.Data {
                     id,
                     title,
                     stream_url,
-                    track_number
+                    track_number,
+                    duration,
+                    disc_number,
+                    year,
+                    bit_rate,
+                    bit_depth,
+                    sample_rate,
+                    channel_count,
+                    file_size,
+                    content_type,
+                    file_suffix,
+                    bpm,
+                    musicbrainz_recording_id
                 FROM songs
                 WHERE album_id = ?
                 ORDER BY track_number ASC, title ASC;
@@ -318,7 +442,20 @@ namespace Vesper.Data {
                         statement.column_text (1),
                         statement.column_text (2),
                         statement.column_int (3),
-                        album
+                        album,
+                        nullable_int (statement, 4),
+                        nullable_int (statement, 5),
+                        nullable_int (statement, 6),
+                        nullable_int (statement, 7),
+                        nullable_int (statement, 8),
+                        nullable_int (statement, 9),
+                        nullable_int (statement, 10),
+                        nullable_int (statement, 11),
+                        nullable_text (statement, 12),
+                        nullable_text (statement, 13),
+                        nullable_int (statement, 14),
+                        nullable_text (statement, 15),
+                        get_song_genres (statement.column_text (0))
                     )
                 );
             }
@@ -339,7 +476,21 @@ namespace Vesper.Data {
                     a.name,
                     a.cover,
                     a.year,
-                    s.track_number
+                    s.track_number,
+                    s.duration,
+                    s.disc_number,
+                    s.year,
+                    s.bit_rate,
+                    s.bit_depth,
+                    s.sample_rate,
+                    s.channel_count,
+                    s.file_size,
+                    s.content_type,
+                    s.file_suffix,
+                    s.bpm,
+                    s.musicbrainz_recording_id,
+                    a.musicbrainz_release_id,
+                    a.musicbrainz_release_group_id
                 FROM songs s
                 JOIN albums a ON s.album_id = a.id
                 WHERE s.id = ?;
@@ -366,15 +517,31 @@ namespace Vesper.Data {
                 statement.column_text (3),
                 statement.column_text (4),
                 cover,
-                year
+                year,
+                get_album_genres (statement.column_text (3)),
+                nullable_text (statement, 20),
+                nullable_text (statement, 21)
             );
 
             return new Song (
                 statement.column_text (0),
                 statement.column_text (1),
                 statement.column_text (2),
-                statement.column_int (8),
-                album
+                statement.column_int (7),
+                album,
+                nullable_int (statement, 8),
+                nullable_int (statement, 9),
+                nullable_int (statement, 10),
+                nullable_int (statement, 11),
+                nullable_int (statement, 12),
+                nullable_int (statement, 13),
+                nullable_int (statement, 14),
+                nullable_int (statement, 15),
+                nullable_text (statement, 16),
+                nullable_text (statement, 17),
+                nullable_int (statement, 18),
+                nullable_text (statement, 19),
+                get_song_genres (statement.column_text (0))
             );
         }
 
@@ -489,6 +656,116 @@ namespace Vesper.Data {
             }
 
             return statement;
+        }
+
+        private void bind_int (
+            Sqlite.Statement statement,
+            int index,
+            int? value
+        ) {
+            if (value != null) {
+                statement.bind_int (index, value);
+            } else {
+                statement.bind_null (index);
+            }
+        }
+
+            private int? nullable_int (Sqlite.Statement statement, int index) {
+                if (statement.column_type (index) == Sqlite.NULL) {
+                    return null;
+                }
+                return statement.column_int (index);
+            }
+
+            private string? nullable_text (Sqlite.Statement statement, int index) {
+                if (statement.column_type (index) == Sqlite.NULL) {
+                    return null;
+                }
+                return statement.column_text (index);
+            }
+        private void bind_int64 (
+            Sqlite.Statement statement,
+            int index,
+            int64? value
+        ) {
+            if (value != null) {
+                statement.bind_int64 (index, value);
+            } else {
+                statement.bind_null (index);
+            }
+        }
+
+        private void bind_text (
+            Sqlite.Statement statement,
+            int index,
+            string? value
+        ) {
+            if (value != null) {
+                statement.bind_text (index, value);
+            } else {
+                statement.bind_null (index);
+            }
+        }
+
+        private Gee.List<Genre> get_genres_from (string sql) throws Error {
+            var genres = new Gee.ArrayList<Genre> ();
+            var statement = prepare (sql);
+            while (statement.step () == Sqlite.ROW) {
+                genres.add (new Genre.with_id (
+                    statement.column_text (0),
+                    statement.column_text (1)
+                ));
+            }
+            return genres;
+        }
+
+        private void save_entity_genres (
+            string table,
+            string entity_column,
+            string entity_id,
+            Gee.List<Genre> genres
+        ) throws Error {
+            var delete_statement = prepare (
+                "DELETE FROM %s WHERE %s = ?;".printf (table, entity_column)
+            );
+            delete_statement.bind_text (1, entity_id);
+            step_done (delete_statement);
+
+            foreach (Genre genre in genres) {
+                save_genre (genre);
+                var link_statement = prepare (
+                    "INSERT OR IGNORE INTO %s (%s, genre_id) VALUES (?, ?);".printf (
+                        table,
+                        entity_column
+                    )
+                );
+                link_statement.bind_text (1, entity_id);
+                link_statement.bind_text (2, genre.id);
+                step_done (link_statement);
+            }
+        }
+
+        private Gee.List<Genre> get_entity_genres (
+            string table,
+            string entity_column,
+            string entity_id
+        ) throws Error {
+            var statement = prepare ("""
+                SELECT g.id, g.name
+                FROM genres g
+                JOIN %s eg ON eg.genre_id = g.id
+                WHERE eg.%s = ?
+                ORDER BY g.name;
+            """.printf (table, entity_column));
+            statement.bind_text (1, entity_id);
+            var genres = new Gee.ArrayList<Genre> ();
+            while (statement.step () == Sqlite.ROW) {
+                genres.add (new Genre.with_id (
+                    statement.column_text (0),
+                    statement.column_text (1)
+                ));
+            }
+            return genres;
         }
 
         private void step_done (

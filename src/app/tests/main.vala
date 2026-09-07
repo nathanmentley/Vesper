@@ -21,6 +21,7 @@ int main (string[] args) {
     Test.init(ref args);
 
     Vesper.App.Tests.Utils.register_string_utils_tests();
+    Vesper.App.Tests.register_metadata_tests();
 
     return Test.run();
 }

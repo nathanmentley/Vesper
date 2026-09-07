@@ -117,8 +117,18 @@ namespace Vesper.Plugins.Subsonic {
                                         string name =
                                             artist->get_prop ("name") ?? "";
 
+                                        var genres = read_genres (artist);
+                                        string? musicbrainz_id =
+                                            artist->get_prop ("musicBrainzId");
+
                                         results.add (
-                                            new Artist (id, name, key.id)
+                                            new Artist (
+                                                id,
+                                                name,
+                                                key.id,
+                                                genres,
+                                                musicbrainz_id
+                                            )
                                         );
                                     }
                                 }
@@ -188,12 +198,23 @@ namespace Vesper.Plugins.Subsonic {
                                     string? year =
                                         album->get_prop ("year");
 
+                                    var genres = read_genres (album);
+                                    string? release_id = album->get_prop (
+                                        "musicBrainzReleaseId"
+                                    );
+                                    string? release_group_id = album->get_prop (
+                                        "musicBrainzReleaseGroupId"
+                                    );
+
                                     results.add (
                                         new Album (
                                             id,
                                             name,
                                             cover_art,
-                                            year
+                                            year,
+                                            genres,
+                                            release_id,
+                                            release_group_id
                                         )
                                     );
                                 }
@@ -254,11 +275,22 @@ namespace Vesper.Plugins.Subsonic {
                             string? year =
                                 album_xml->get_prop ("year");
 
+                            var album_genres = read_genres (album_xml);
+                            string? release_id = album_xml->get_prop (
+                                "musicBrainzReleaseId"
+                            );
+                            string? release_group_id = album_xml->get_prop (
+                                "musicBrainzReleaseGroupId"
+                            );
+
                             var album = new Album (
                                 id,
                                 name,
                                 cover_art,
-                                year
+                                year,
+                                album_genres,
+                                release_id,
+                                release_group_id
                             );
 
                             for (
@@ -279,13 +311,28 @@ namespace Vesper.Plugins.Subsonic {
                                     string? track_number_str =
                                         song->get_prop ("track");
 
+                                    var song_genres = read_genres (song);
+
                                     results.add (
                                         new Song (
                                             song_id,
                                             title,
                                             build_stream_url (song_id),
                                             int.parse (track_number_str ?? "0"),
-                                            album
+                                            album,
+                                            parse_int (song->get_prop ("duration")),
+                                            parse_int (song->get_prop ("discNumber")),
+                                            parse_int (song->get_prop ("year")),
+                                            parse_int (song->get_prop ("bitRate")),
+                                            parse_int (song->get_prop ("bitDepth")),
+                                            parse_int (song->get_prop ("sampleRate")),
+                                            parse_int (song->get_prop ("channelCount")),
+                                            parse_int64 (song->get_prop ("size")),
+                                            song->get_prop ("contentType"),
+                                            song->get_prop ("suffix"),
+                                            parse_int (song->get_prop ("bpm")),
+                                            song->get_prop ("musicBrainzId"),
+                                            song_genres
                                         )
                                     );
                                 }
@@ -366,6 +413,44 @@ namespace Vesper.Plugins.Subsonic {
                 return config.base_url.has_suffix ("/")
                     ? config.base_url
                     : config.base_url + "/";
+            }
+
+            private static int? parse_int (string? value) {
+                if (value == null || value.strip () == "") {
+                    return null;
+                }
+                return int.parse (value);
+            }
+
+            private static int64? parse_int64 (string? value) {
+                if (value == null || value.strip () == "") {
+                    return null;
+                }
+                return int64.parse (value);
+            }
+
+            private static Gee.List<Genre> read_genres (Xml.Node* node) {
+                var genres = new Gee.ArrayList<Genre> ();
+                var names = new Gee.HashSet<string> ();
+                string? genre = node->get_prop ("genre");
+
+                if (genre != null && genre.strip () != "") {
+                    names.add (genre);
+                }
+
+                for (Xml.Node* child = node->children; child != null; child = child->next) {
+                    if (child->type == Xml.ElementType.ELEMENT_NODE && child->name == "genre") {
+                        string? name = child->get_prop ("name");
+                        if (name != null && name.strip () != "") {
+                            names.add (name);
+                        }
+                    }
+                }
+
+                foreach (string name in names) {
+                    genres.add (new Genre (name));
+                }
+                return genres;
             }
 
             /**

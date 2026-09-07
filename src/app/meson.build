@@ -80,6 +80,7 @@ vesper = executable(
 )
 
 test_sources = [
+  'tests/metadata_tests.vala',
   'tests/utils/string_utils_tests.vala',
   'tests/main.vala',
 ]

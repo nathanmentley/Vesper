@@ -43,6 +43,39 @@ namespace Vesper.Data {
             Song song
         ) throws Error;
 
+        public abstract void save_genre (Genre genre) throws Error;
+
+        public abstract Genre? get_genre (string genre_id) throws Error;
+
+        public abstract Gee.List<Genre> get_genres () throws Error;
+
+        public abstract void save_artist_genres (
+            string artist_id,
+            Gee.List<Genre> genres
+        ) throws Error;
+
+        public abstract Gee.List<Genre> get_artist_genres (
+            string artist_id
+        ) throws Error;
+
+        public abstract void save_album_genres (
+            string album_id,
+            Gee.List<Genre> genres
+        ) throws Error;
+
+        public abstract Gee.List<Genre> get_album_genres (
+            string album_id
+        ) throws Error;
+
+        public abstract void save_song_genres (
+            string song_id,
+            Gee.List<Genre> genres
+        ) throws Error;
+
+        public abstract Gee.List<Genre> get_song_genres (
+            string song_id
+        ) throws Error;
+
         public abstract Library? get_library (
             string library_id
         ) throws Error;
