@@ -1,0 +1,5 @@
+[Plugin]
+Module=vesper-lrclib-plugin
+Name=LRCLIB
+Description=lrclib
+Loader=C

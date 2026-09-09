@@ -20,6 +20,8 @@ service_sources = [
   'src/user_state/user_state_service.vala',
   'src/libraries/library_service_impl.vala',
   'src/libraries/library_service.vala',
+  'src/lyric/lyrics_service_impl.vala',
+  'src/lyric/lyrics_service.vala',
   'src/media/media_service_impl.vala',
   'src/media/media_service.vala',
   'src/playlists/playlist_service_impl.vala',

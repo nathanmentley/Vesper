@@ -20,6 +20,7 @@ using GLib;
 using Vesper.Core.Models;
 
 using Vesper.Service.Libraries;
+using Vesper.Service.Lyric;
 
 using Vesper.App.Models;
 using Vesper.App.Views;
@@ -27,12 +28,23 @@ using Vesper.App.Views;
 namespace Vesper.App.Controllers {
     public class NowPlayingController : BaseController<NowPlayingView> {
         private LibraryService library_service;
+        private LyricsService lyrics_service;
         private PlayQueue queue;
+
+        /*
+         * The song ID associated with the current lyrics request.
+         *
+         * Lyrics are loaded asynchronously, so the user can change songs
+         * while a previous request is still in flight. This prevents an
+         * old request from replacing the lyrics for the new song.
+         */
+        private string? lyrics_song_id = null;
 
         public signal void play_requested (Song song);
 
         public NowPlayingController (
             LibraryService library_service,
+            LyricsService lyrics_service,
             PlayQueue queue,
             Gtk.Window parent_window
         ) {
@@ -43,6 +55,7 @@ namespace Vesper.App.Controllers {
             );
 
             this.library_service = library_service;
+            this.lyrics_service = lyrics_service;
             this.queue = queue;
 
             connect_view ();
@@ -79,12 +92,6 @@ namespace Vesper.App.Controllers {
             );
 
             queue.changed.connect (() => {
-                stdout.printf (
-                    "QUEUE CHANGED: %d songs, current=%d\n",
-                    queue.get_songs ().size,
-                    queue.get_current_index ()
-                );
-
                 view.set_queue (
                     queue.get_songs (),
                     queue.get_current_index ()
@@ -108,6 +115,8 @@ namespace Vesper.App.Controllers {
             view.set_album (song.album);
 
             set_cover_art.begin (song);
+
+            load_lyrics (song);
         }
 
         private void select_queue_song (
@@ -150,6 +159,76 @@ namespace Vesper.App.Controllers {
             } catch (GLib.Error e) {
                 view.set_album_art (null);
             }
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Lyrics
+         * -------------------------------------------------------------
+         */
+
+        private static int64 ns_to_ms (
+            int64 nanoseconds
+        ) {
+            return nanoseconds / 1000000;
+        }
+
+        public void update_lyrics (
+            int64 p
+        ) {
+            view.set_lyrics_position (
+                ns_to_ms (p)
+            );
+        }
+
+        private void load_lyrics (
+            Song song
+        ) {
+            /*
+             * Invalidate the previous request immediately.
+             */
+            lyrics_song_id = song.id;
+
+            /*
+             * Don't leave the previous song's lyrics visible while the
+             * new request is being performed.
+             */
+            view.set_lyrics (null);
+
+            string requested_song_id =
+                song.id;
+
+            lyrics_service.get_lyrics.begin (
+                song,
+                (obj, res) => {
+                    try {
+                        Lyrics? lyrics =
+                            lyrics_service.get_lyrics.end (
+                                res
+                            );
+
+                        /*
+                         * The user changed songs while this request was
+                         * running. Ignore the stale result.
+                         */
+                        if (lyrics_song_id != requested_song_id) {
+                            return;
+                        }
+
+                        view.set_lyrics (
+                            lyrics
+                        );
+                    } catch (GLib.Error e) {
+                        /*
+                         * Treat failure to retrieve lyrics the same as
+                         * having no lyrics.
+                         */
+                        if (lyrics_song_id == requested_song_id) {
+                            view.set_lyrics (null);
+                        }
+                    }
+                }
+            );
         }
     }
 }

@@ -88,6 +88,7 @@ namespace Vesper.App.Windows {
             );
             this.now_playing_controller = new NowPlayingController (
                 ioc.library_service,
+                ioc.lyrics_service,
                 this.playlist,
                 this
             );
@@ -404,6 +405,8 @@ namespace Vesper.App.Windows {
             player_controller.shuffle_requested.connect (enabled => { shuffle_enabled = enabled; });
             player_controller.repeat_requested.connect (enabled => { repeat_enabled = enabled; });
 
+            player_controller.position_update.connect (now_playing_controller.update_lyrics);
+
             /*
              * ---------------------------------------------------------
              * Playlist
@@ -600,7 +603,6 @@ namespace Vesper.App.Windows {
             now_playing_controller.set_song (
                 song
             );
-
         }
 
         /*

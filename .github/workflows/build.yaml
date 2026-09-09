@@ -37,6 +37,7 @@ jobs:
             libsoup-3.0-dev \
             libgdk-pixbuf-2.0-dev \
             libxml2-dev \
+            libgupnp-1.6-dev \
             libsqlite3-dev
 
       - name: Install Meson
@@ -60,6 +61,7 @@ jobs:
             libsoup \
             gdk-pixbuf \
             libxml2 \
+            gupnp \
             sqlite
 
       - name: Check build tools

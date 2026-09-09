@@ -13,3 +13,36 @@
 .list-item:focus { background: rgba(50,120,255,0.12); }
 .now-play { font-weight: 700; font-size: 14px; }
 .current-song { font-weight: bold; }
+
+
+.lyrics-list {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.lyrics-row {
+    padding: 10px 12px;
+    border-radius: 12px;
+}
+
+.lyrics-text {
+    opacity: 0.45;
+}
+
+.lyrics-past .lyrics-text {
+    opacity: 0.30;
+}
+
+.lyrics-future .lyrics-text {
+    opacity: 0.45;
+}
+
+.lyrics-current {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+.lyrics-current .lyrics-text {
+    opacity: 1;
+    font-weight: bold;
+}

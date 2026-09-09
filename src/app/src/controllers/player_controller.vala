@@ -35,6 +35,8 @@ namespace Vesper.App.Controllers {
         public signal void shuffle_requested (bool enabled);
         public signal void repeat_requested (bool enabled);
 
+        public signal void position_update (int64 position);
+
         private MediaService music;
         private UserStateService user_state;
         private Song? current_song;
@@ -272,6 +274,8 @@ namespace Vesper.App.Controllers {
             int64 duration = music.get_duration ();
 
             view.set_position (position, duration);
+
+            position_update(position);
 
             return true;
         }

@@ -47,6 +47,7 @@ gst_video_dep = dependency('gstreamer-video-1.0')
 gst_pbutils_dep = dependency('gstreamer-pbutils-1.0')
 libsoup_dep = dependency('libsoup-3.0')
 gupnp_dep = dependency('gupnp-1.6')
+json_dep = dependency('json-glib-1.0')
 
 gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
 xml_dep = dependency('libxml-2.0')

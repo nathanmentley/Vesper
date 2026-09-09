@@ -13,8 +13,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Vesper.  If not, see <https://gnu.org>.
 
-subdir('dlnamusicengine')
-subdir('subsonic')
-subdir('gstreamer')
-subdir('lrclib')
-subdir('filesystem')
+lrclib_plugin_sources = [
+  'src/entrypoint.vala',
+]
+
+lrclib_vesper_plugin = library(
+  'vesper-lrclib-plugin',
+  lrclib_plugin_sources,
+  dependencies: [
+    gee_dep,
+    glib_dep,
+    gobject_dep,
+    libpeas_dep,
+    vesper_core_dep,
+    libsoup_dep,
+    json_dep,
+  ],
+  vala_header: 'vesper-lrclib-plugin.h',
+  vala_vapi: 'vesper-lrclib-plugin.vapi',
+  install_vala_header: true,
+  install_vala_vapi: true,
+  install: true,
+)
+
+configure_file(
+  input: 'lrclib.plugin',
+  output: 'lrclib.plugin',
+  copy: true
+)

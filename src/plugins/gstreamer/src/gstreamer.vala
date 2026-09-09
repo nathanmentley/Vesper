@@ -208,12 +208,6 @@ namespace Vesper.Plugins.GStreamer {
         }
 
         private void handle_message (Gst.Message gst_message) {
-            GLib.message (
-                "GStreamer message: %s from %s",
-                gst_message.type.to_string (),
-                gst_message.src.name
-            );
-
             switch (gst_message.type) {
                 case Gst.MessageType.EOS:
                     GLib.message ("GStreamer EOS received");
@@ -304,8 +298,6 @@ namespace Vesper.Plugins.GStreamer {
             playback_state = state;
 
             this.state_changed (state);
-
-            GLib.message ("state_changed emitted");
         }
 
         private void start_position_timer () {

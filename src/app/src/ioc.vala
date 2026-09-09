@@ -24,6 +24,7 @@ using Vesper.Core.Settings;
 using Vesper.Data;
 
 using Vesper.Service.Libraries;
+using Vesper.Service.Lyric;
 using Vesper.Service.Media;
 using Vesper.Service.Mixes;
 using Vesper.Service.Playlists;
@@ -36,6 +37,7 @@ using Vesper.App.Windows;
 namespace Vesper.App {
     public class IOC : Object {
         public LibraryService library_service { get; private set; }
+        public LyricsService lyrics_service { get; private set; }
         public MediaService media_service { get; private set; }
         public SettingsService settings_service { get; private set; }
         public PlaylistService playlist_service { get; private set; }
@@ -79,7 +81,9 @@ namespace Vesper.App {
             Gee.List<SettingsProvider> setting_providers = get_plugin_impls (plugin_manager, settings, typeof(SettingsProvider));
             Gee.List<MusicLibrary> libraries = get_plugin_impls (plugin_manager, settings, typeof(MusicLibrary));
             MusicEngine music_engine = get_first_plugin_impl (plugin_manager, settings, typeof(MusicEngine));
+            LyricsProvider lyrics_provider = get_first_plugin_impl (plugin_manager, settings, typeof(LyricsProvider));
 
+            lyrics_service = new LyricsServiceImpl (lyrics_provider);
             library_service = new LibraryServiceImpl (library_repository, artwork_cache_repository, libraries);
             media_service = new MediaServiceImpl (music_engine);
             settings_service = new SettingsServiceImpl (settings, setting_providers);
