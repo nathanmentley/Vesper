@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://gnu.org>.
  */
 
+using Vesper.Core.Models;
 using Vesper.Core.Plugins;
 
 namespace Vesper.Service.Media {
@@ -32,7 +33,7 @@ namespace Vesper.Service.Media {
             music_engine.position_changed.connect ((position, duration) => position_changed.emit (position, duration));
         }
 
-        public void set_source (string uri) {
+        public void set_source (PlayableStream uri) {
             music_engine.set_source (uri);
         }
 

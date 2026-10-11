@@ -29,5 +29,7 @@ namespace Vesper.Core.Plugins {
         public abstract async Gee.List<Song> get_tracks (string album_id);
 
         public abstract async GLib.Bytes? get_artwork (Song song);
+
+        public abstract PlayableStream? get_stream (Song song);
     }
 }

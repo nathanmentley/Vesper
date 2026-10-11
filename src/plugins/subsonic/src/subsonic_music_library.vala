@@ -153,6 +153,10 @@ namespace Vesper.Plugins.Subsonic {
         public async GLib.Bytes? get_artwork (Song song) {
             return yield client.get_cover_bytes (song.album.cover);
         }
+        
+        public PlayableStream? get_stream (Song song) {
+            return new PlayableStream(song.stream_url);
+        }
     }
 }
 

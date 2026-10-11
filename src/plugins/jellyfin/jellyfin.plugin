@@ -1,0 +1,5 @@
+[Plugin]
+Module=vesper-jellyfin-plugin
+Name=Jellyfin
+Description=Jellyfin music library
+Loader=C

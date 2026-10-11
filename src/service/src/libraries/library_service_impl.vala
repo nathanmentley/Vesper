@@ -240,6 +240,18 @@ namespace Vesper.Service.Libraries {
 
             return null;
         }
+        
+        public PlayableStream? get_stream (Song song) {
+            foreach (MusicLibrary music_library in music_libraries) {
+                PlayableStream? stream = music_library.get_stream (song);
+
+                if (stream != null) {
+                    return stream;
+                }
+            }
+
+            return null;
+        }
 
         public Gee.List<SearchResult> search (string query, int limit = 50) throws Error {
             return library_repository.search (query, limit);

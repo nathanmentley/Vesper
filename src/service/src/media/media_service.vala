@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://gnu.org>.
  */
 
+using Vesper.Core.Models;
 using Vesper.Core.Plugins;
 
 namespace Vesper.Service.Media {
     public interface MediaService : Object {
-        public abstract void set_source (string uri);
+        public abstract void set_source (PlayableStream uri);
 
         public abstract bool has_player ();
 

@@ -18,6 +18,7 @@
 using GLib;
 using Gst;
 
+using Vesper.Core.Models;
 using Vesper.Core.Plugins;
 using Vesper.Core.Settings;
 
@@ -63,10 +64,10 @@ namespace Vesper.Plugins.GStreamer {
 
         public void configure (SettingsEngine settings) {}
 
-        public void set_source (string uri) {
+        public void set_source (PlayableStream uri) {
             stop_player ();
 
-            string escaped_uri = uri.replace ("\"", "\\\"");
+            string escaped_uri = uri.url.replace ("\"", "\\\"");
 
             try {
                 player = Gst.parse_launch ("playbin uri=\"" + escaped_uri + "\"");

@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://gnu.org>.
  */
 
+using Vesper.Core.Models;
+
 namespace Vesper.Core.Plugins {
     public enum PlaybackState {
         STOPPED,
@@ -24,7 +26,7 @@ namespace Vesper.Core.Plugins {
     }
 
     public interface MusicEngine : Plugin, Object {
-        public abstract void set_source (string uri);
+        public abstract void set_source (PlayableStream uri);
 
         public abstract bool has_player ();
 

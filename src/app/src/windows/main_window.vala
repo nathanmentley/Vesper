@@ -94,6 +94,7 @@ namespace Vesper.App.Windows {
             );
             this.player_controller = new PlayerController (
                 ioc.media_service,
+                ioc.library_service,
                 ioc.user_state_service,
                 this
             );

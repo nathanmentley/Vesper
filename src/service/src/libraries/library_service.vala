@@ -31,6 +31,8 @@ namespace Vesper.Service.Libraries {
         public abstract async Song? get_track (string song_id);
 
         public abstract async GLib.Bytes? get_artwork (Song song);
+        
+        public abstract PlayableStream? get_stream (Song song);
 
         public abstract Gee.List<SearchResult> search (string query, int limit = 50) throws Error;
 

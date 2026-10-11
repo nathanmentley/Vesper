@@ -19,22 +19,25 @@ namespace Vesper.App.Utils {
     public sealed class AtomicFlag : Object {
         private int _flag = 0; // 0 = false, 1 = true
 
-        public bool flag {
+        private bool flag {
             get {
                 return AtomicInt.get(ref _flag) != 0;
             }
-            set {
-                int new_val = value ? 1 : 0;
-
-                AtomicInt.set(ref _flag, new_val);
-            }
         }
 
-        public bool compare_and_exchange(bool old_val, bool new_val) {
-            int old_int = old_val ? 1 : 0;
-            int new_int = new_val ? 1 : 0;
+        public bool current_value () {
+            return this.flag;
+        }
+
+        public bool compare_and_exchange (bool old_val, bool new_val) {
+            int old_int = convert (old_val);
+            int new_int = convert (new_val);
 
             return AtomicInt.compare_and_exchange(ref _flag, old_int, new_int);
+        }
+
+        private int convert (bool value) {
+            return value ? 1 : 0;
         }
     }
 }

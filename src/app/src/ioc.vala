@@ -47,7 +47,7 @@ namespace Vesper.App {
         public IOC () {
             Object ();
 
-            SettingsEngine settings = new SettingsEngineImpl("vesper-config.ini");
+            SettingsEngine settings = new SettingsEngineImpl("/home/nathan/vesper-config.ini");
 
             SettingDefinition database_directory_setting = new SettingDefinition (
                 "general",

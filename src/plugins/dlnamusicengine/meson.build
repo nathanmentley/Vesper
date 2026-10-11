@@ -26,6 +26,7 @@ dlna_vesper_plugin = library(
     libpeas_dep,
     gupnp_dep,
     vesper_core_dep,
+    m_dep,
   ],
   vala_header: 'vesper-dlna-plugin.h',
   vala_vapi: 'vesper-dlna-plugin.vapi',

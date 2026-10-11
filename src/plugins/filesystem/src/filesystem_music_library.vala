@@ -249,6 +249,10 @@ namespace Vesper.Plugins.Filesystem {
         
             return songs;
         }
+        
+        public PlayableStream? get_stream (Song song) {
+            return new PlayableStream(song.stream_url);
+        }
 
         private static bool is_audio_file (string filename) {
             var lower = filename.down ();

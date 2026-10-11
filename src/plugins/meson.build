@@ -16,5 +16,6 @@
 subdir('dlnamusicengine')
 subdir('subsonic')
 subdir('gstreamer')
+subdir('jellyfin')
 subdir('lrclib')
 subdir('filesystem')

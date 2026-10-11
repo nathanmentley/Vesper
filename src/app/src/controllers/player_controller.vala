@@ -21,6 +21,7 @@ using GLib;
 
 using Vesper.Core.Models;
 using Vesper.Core.Plugins;
+using Vesper.Service.Libraries;
 using Vesper.Service.Media;
 using Vesper.Service.UserState;
 
@@ -38,6 +39,7 @@ namespace Vesper.App.Controllers {
         public signal void position_update (int64 position);
 
         private MediaService music;
+        private LibraryService library;
         private UserStateService user_state;
         private Song? current_song;
         private bool current_song_recorded = false;
@@ -48,6 +50,7 @@ namespace Vesper.App.Controllers {
 
         public PlayerController (
             MediaService music,
+            LibraryService library,
             UserStateService user_state,
             Gtk.Window parent_window
         ) {
@@ -58,6 +61,7 @@ namespace Vesper.App.Controllers {
             this.view.set_volume (1.0);
 
             this.music = music;
+            this.library = library;
             this.user_state = user_state;
             this.view.set_favorite_available (false);
 
@@ -109,9 +113,9 @@ namespace Vesper.App.Controllers {
         }
 
         public void play (Song song) {
-            string uri = song.stream_url;
+            PlayableStream uri = library.get_stream (song);
 
-            if (uri.length == 0) {
+            if (uri == null || uri.url.length == 0) {
                 set_status ("Please enter a stream URL");
 
                 return;

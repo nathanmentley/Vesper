@@ -17,6 +17,7 @@ core_sources = [
   'src/models/genre.vala',
   'src/models/mix.vala',
   'src/models/play_history_entry.vala',
+  'src/models/playable_stream.vala',
   'src/models/song_stats.vala',
   'src/models/album.vala',
   'src/models/artist.vala',

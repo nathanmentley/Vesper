@@ -1,6 +1,7 @@
 using GLib;
 using GUPnP;
 
+using Vesper.Core.Models;
 using Vesper.Core.Plugins;
 using Vesper.Core.Settings;
 
@@ -99,8 +100,8 @@ namespace Vesper.Plugins.DLNA {
         public void configure (SettingsEngine settings) {
         }
 
-        public void set_source (string uri) {
-            source_uri = uri;
+        public void set_source (PlayableStream uri) {
+            source_uri = uri.url;
 
             if (av_transport == null) {
                 warning ("No DLNA renderer is currently available");
