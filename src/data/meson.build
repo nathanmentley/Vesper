@@ -39,8 +39,7 @@ vesper_data = library(
   ],
   vala_header: 'vesper-data.h',
   vala_vapi: 'vesper-data.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
+  install_dir: [true, true, true],
   install: true,
 )
 

@@ -71,7 +71,17 @@ namespace Vesper.App.Views {
              * ---------------------------------------------------------
              */
 
-            var setting_definitions = settings_service.get_setting_definitions ();
+            var settings_content =
+                new Gtk.Box (
+                    Orientation.VERTICAL,
+                    0
+                );
+
+            settings_content.hexpand = true;
+
+            var setting_definitions =
+                settings_service.get_setting_definitions ();
+
             foreach (var provider in setting_definitions.keys) {
                 var group =
                     create_provider_group (
@@ -79,10 +89,30 @@ namespace Vesper.App.Views {
                         setting_definitions.get (provider)
                     );
 
-                content.append (
+                settings_content.append (
                     group
                 );
             }
+
+            var scrolled_window =
+                new Gtk.ScrolledWindow ();
+
+            scrolled_window.hscrollbar_policy =
+                Gtk.PolicyType.NEVER;
+
+            scrolled_window.vscrollbar_policy =
+                Gtk.PolicyType.AUTOMATIC;
+
+            scrolled_window.hexpand = true;
+            scrolled_window.vexpand = true;
+
+            scrolled_window.set_child (
+                settings_content
+            );
+
+            content.append (
+                scrolled_window
+            );
 
             /*
              * ---------------------------------------------------------

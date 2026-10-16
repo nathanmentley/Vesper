@@ -42,10 +42,13 @@ vesper_service = library(
     vesper_core_dep,
     vesper_data_dep,
   ],
+  vala_args: [
+    '--vapidir=' + meson.project_source_root() / 'vapi',
+    '--pkg=libpeas-2',
+  ],
   vala_header: 'vesper-service.h',
   vala_vapi: 'vesper-service.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
+  install_dir: [true, true, true],
   install: true,
 )
 

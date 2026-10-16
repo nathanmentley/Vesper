@@ -47,7 +47,15 @@ namespace Vesper.App {
         public IOC () {
             Object ();
 
-            SettingsEngine settings = new SettingsEngineImpl("/home/nathan/vesper-config.ini");
+            string config_dir = Path.build_filename(Environment.get_user_config_dir(), "vesper");
+
+            string config_path = Path.build_filename(config_dir, "vesper-config.ini");
+
+            DirUtils.create_with_parents(config_dir, 0755);
+
+            
+
+            SettingsEngine settings = new SettingsEngineImpl(config_path);
 
             SettingDefinition database_directory_setting = new SettingDefinition (
                 "general",

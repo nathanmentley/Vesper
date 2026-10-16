@@ -30,13 +30,11 @@ dlna_vesper_plugin = library(
   ],
   vala_header: 'vesper-dlna-plugin.h',
   vala_vapi: 'vesper-dlna-plugin.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
   install: true,
+  install_dir: get_option('libdir') / 'plugins' / 'dlna',
 )
 
-# configure_file(
-#   input: 'dlna.plugin',
-#   output: 'dlna.plugin',
-#   copy: true
+# install_data(
+#   'dlna.plugin',
+#   install_dir: get_option('libdir') / 'plugins' / 'dlna',
 # )

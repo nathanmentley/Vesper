@@ -1,0 +1,55 @@
+app-id: com.poketrirx.Vesper
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+command: vesper
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --socket=pulseaudio
+
+modules:
+  - name: libpeas
+    buildsystem: meson
+    config-opts:
+      - -Dlua51=false
+      - -Dpython3=false
+      - -Dgjs=false
+      - -Dvapi=true
+    sources:
+      - type: git
+        url: https://gitlab.gnome.org/GNOME/libpeas.git
+        tag: 2.2.1
+
+  - name: gssdp
+    buildsystem: meson
+    config-opts:
+      - -Dmanpages=false
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/gssdp/1.6/gssdp-1.6.6.tar.xz
+        sha256: 767d2275254ce0efeaeac64419ff9f4f0ad470d134ef672f5c556b2abb786bcb
+
+  - name: gupnp
+    buildsystem: meson
+    config-opts:
+      - -Dintrospection=true
+      - -Dvapi=true
+    sources:
+      - type: git
+        url: https://gitlab.gnome.org/GNOME/gupnp.git
+        tag: gupnp-1.6.6
+
+  - name: vesper
+    buildsystem: meson
+    sources:
+      - type: dir
+        path: ..
+    config-opts:
+      - --buildtype=release
+    finish-args:
+      - --share=network

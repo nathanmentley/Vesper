@@ -35,7 +35,7 @@ namespace Vesper.App {
         private IOC ioc;
 
         public VesperApplication () {
-            Object (application_id: "com.poketrirx.vesper", flags: ApplicationFlags.HANDLES_OPEN);
+            Object (application_id: "com.poketrirx.Vesper", flags: ApplicationFlags.HANDLES_OPEN);
 
             ioc = new IOC ();
         }

@@ -1,3 +1,8 @@
+.flatpak-builder
 build
+build-dir
+flatpak-build
+repo
 data.db
 vesper-config.ini
+vesper.flatpak

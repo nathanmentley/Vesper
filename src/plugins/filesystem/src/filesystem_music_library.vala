@@ -76,6 +76,11 @@ namespace Vesper.Plugins.Filesystem {
 
         public async Gee.List<Artist> get_artists () {
             var artists = new Gee.ArrayList<Artist> ();
+
+            if (config.directory == null || config.directory == "") {
+                return artists;
+            }
+
             var directory = File.new_for_path (config.directory);
 
             try {

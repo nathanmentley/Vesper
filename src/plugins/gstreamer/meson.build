@@ -33,13 +33,11 @@ gstreamer_vesper_plugin = library(
   ],
   vala_header: 'vesper-gstreamer-plugin.h',
   vala_vapi: 'vesper-gstreamer-plugin.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
   install: true,
+  install_dir: get_option('libdir') / 'plugins' / 'gstreamer',
 )
 
-configure_file(
-  input: 'gstreamer.plugin',
-  output: 'gstreamer.plugin',
-  copy: true
+install_data(
+  'gstreamer.plugin',
+  install_dir: get_option('libdir') / 'plugins' / 'gstreamer',
 )

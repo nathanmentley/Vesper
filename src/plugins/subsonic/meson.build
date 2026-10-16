@@ -31,13 +31,11 @@ subsonic_vesper_plugin = library(
   ],
   vala_header: 'vesper-subsonic-plugin.h',
   vala_vapi: 'vesper-subsonic-plugin.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
   install: true,
+  install_dir: get_option('libdir') / 'plugins' / 'subsonic',
 )
 
-configure_file(
-  input: 'subsonic.plugin',
-  output: 'subsonic.plugin',
-  copy: true
+install_data(
+  'subsonic.plugin',
+  install_dir: get_option('libdir') / 'plugins' / 'subsonic',
 )

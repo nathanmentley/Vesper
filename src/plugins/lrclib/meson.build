@@ -31,13 +31,11 @@ lrclib_vesper_plugin = library(
   ],
   vala_header: 'vesper-lrclib-plugin.h',
   vala_vapi: 'vesper-lrclib-plugin.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
   install: true,
+  install_dir: get_option('libdir') / 'plugins' / 'lrclib',
 )
 
-configure_file(
-  input: 'lrclib.plugin',
-  output: 'lrclib.plugin',
-  copy: true
+install_data(
+  'lrclib.plugin',
+  install_dir: get_option('libdir') / 'plugins' / 'lrclib',
 )

@@ -52,8 +52,7 @@ vesper_core = library(
   ],
   vala_header: 'vesper-core.h',
   vala_vapi: 'vesper-core.vapi',
-  install_vala_header: true,
-  install_vala_vapi: true,
+  install_dir: [true, true, true],
   install: true,
 )
 

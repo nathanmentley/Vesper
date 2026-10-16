@@ -18,7 +18,7 @@ project(
   ['vala', 'c'],
   version: '0.1.0',
   license: 'GPL-3.0-or-later',
-  meson_version: '>= 1.11.0',
+  meson_version: '>= 1.9.2',
   default_options: [
     'buildtype=debug',
     'warning_level=1'
@@ -54,8 +54,52 @@ xml_dep = dependency('libxml-2.0')
 
 sqlite_dep = dependency('sqlite3')
 
+install_data(
+  'data/com.poketrirx.Vesper.desktop',
+  install_dir: get_option('datadir') / 'applications',
+)
+
+install_data(
+  'data/icons/hicolor/scalable/apps/com.poketrirx.Vesper.png',
+  install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps',
+)
+
 subdir('src/core')
 subdir('src/data')
 subdir('src/service')
 subdir('src/app')
 subdir('src/plugins')
+
+
+# Flatpak
+
+flatpak_builder = find_program('flatpak-builder', required: false)
+sh = find_program('sh', required: false)
+
+if flatpak_builder.found() and sh.found()
+  flatpak_install = custom_target(
+    'flatpak-install',
+    output: 'flatpak-install.stamp',
+    command: [
+      sh,
+      '-c',
+      ' '.join([
+        'flatpak-builder',
+        '--force-clean',
+        '--user',
+        '--install-deps-from=flathub',
+        '--repo="$1"',
+        '--install',
+        '"$2"',
+        '"$3"',
+        '&& touch "$4"',
+      ]),
+      'flatpak-install',
+      meson.current_build_dir() / 'flatpak-repo',
+      meson.current_build_dir() / 'flatpak-build',
+      meson.project_source_root() / 'flatpak/com.poketrirx.Vesper.yml',
+      '@OUTPUT@',
+    ],
+    build_by_default: false,
+  )
+endif

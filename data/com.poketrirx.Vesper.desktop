@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Vesper
+Comment=Listen to your music
+Exec=vesper
+Icon=com.poketrirx.Vesper
+Terminal=false
+Type=Application
+Categories=Audio;Music;Player;
+StartupNotify=true
