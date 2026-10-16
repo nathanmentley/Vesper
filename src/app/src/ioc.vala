@@ -51,9 +51,9 @@ namespace Vesper.App {
 
             string config_path = Path.build_filename(config_dir, "vesper-config.ini");
 
-            DirUtils.create_with_parents(config_dir, 0755);
+            string db_path = Path.build_filename(config_dir, "data.db");
 
-            
+            DirUtils.create_with_parents(config_dir, 0755);
 
             SettingsEngine settings = new SettingsEngineImpl(config_path);
 
@@ -65,7 +65,7 @@ namespace Vesper.App {
                 SettingType.STRING
             );
 
-            string data_directory = settings.get_string (database_directory_setting) ?? "./data";
+            string data_directory = settings.get_string (database_directory_setting) ?? db_path;
 
             Database database = new DatabaseImpl (data_directory);
 
@@ -82,7 +82,7 @@ namespace Vesper.App {
                 SettingType.STRING
             );
 
-            string plugin_directory = settings.get_string (plugin_directory_setting) ?? "./plugins";
+            string plugin_directory = "/app/lib/plugins";
 
             PluginManager plugin_manager = new PluginManager(plugin_directory);
 

@@ -79,16 +79,22 @@ meson setup build
 meson compile -C build
 ```
 
-Run Vesper:
-
-```bash
-./build/src/app/vesper
-```
-
 Run the test suite:
 
 ```bash
 meson test -C build --verbose
+```
+
+Install Vesper:
+
+```bash
+meson compile -C build flatpak-install
+```
+
+Run Vesper:
+
+```bash
+flatpak run com.poketrirx.Vesper
 ```
 
 For a clean build, remove the `build` directory and run `meson setup build` again.
@@ -114,16 +120,23 @@ meson setup build
 meson compile -C build
 ```
 
-Run Vesper:
-
-```bash
-./build/src/app/vesper
-```
 
 Run the test suite:
 
 ```bash
 meson test -C build --verbose
+```
+
+Install Vesper:
+
+```bash
+meson compile -C build flatpak-install
+```
+
+Run Vesper:
+
+```bash
+flatpak run com.poketrirx.Vesper
 ```
 
 Other Linux distributions should provide equivalent packages for the dependencies listed in the [Requirements](#requirements) section.
@@ -157,7 +170,6 @@ meson compile -C build
 ```
 
 Run Vesper:
-
 ```bash
 ./build/src/app/vesper
 ```

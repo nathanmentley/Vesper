@@ -60,6 +60,12 @@ namespace Vesper.App.Windows {
         private Adw.ToastOverlay toast_overlay;
 
         /*
+         * Library sync indicator.
+         */
+        private Gtk.ProgressBar sync_progress_bar;
+        private uint sync_pulse_source = 0;
+
+        /*
          * Player remains visible while switching between views.
          */
         private Gtk.Box player_box;
@@ -73,7 +79,6 @@ namespace Vesper.App.Windows {
             );
 
             this.playlist = new PlayQueue ();
-
             this.ioc = ioc;
 
             /*
@@ -81,29 +86,37 @@ namespace Vesper.App.Windows {
              * Controllers
              * ---------------------------------------------------------
              */
+
             this.browser_controller = new BrowserController (
                 ioc.library_service,
                 ioc.playlist_service,
                 this
             );
+
             this.now_playing_controller = new NowPlayingController (
                 ioc.library_service,
                 ioc.lyrics_service,
                 this.playlist,
                 this
             );
+
             this.player_controller = new PlayerController (
                 ioc.media_service,
                 ioc.library_service,
                 ioc.user_state_service,
                 this
             );
+
             this.playlist_controller = new PlaylistController (
                 ioc.playlist_service,
                 ioc.mix_service,
                 this
             );
-            this.settings_controller = new SettingsController (ioc.settings_service, this);
+
+            this.settings_controller = new SettingsController (
+                ioc.settings_service,
+                this
+            );
 
             build_ui ();
             connect_signals ();
@@ -117,8 +130,7 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            view_stack =
-                new Adw.ViewStack ();
+            view_stack = new Adw.ViewStack ();
 
             /*
              * ---------------------------------------------------------
@@ -126,12 +138,16 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            Gtk.Box now_playing_box = new Gtk.Box (Orientation.VERTICAL, 0);
+            Gtk.Box now_playing_box = new Gtk.Box (
+                Orientation.VERTICAL,
+                0
+            );
 
             now_playing_box.set_margin_top (12);
             now_playing_box.set_margin_bottom (12);
             now_playing_box.set_margin_start (12);
             now_playing_box.set_margin_end (12);
+
             now_playing_controller.mount (now_playing_box);
 
             view_stack.add_titled_with_icon (
@@ -147,12 +163,16 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            var library_box = new Gtk.Box (Orientation.VERTICAL, 0);
+            var library_box = new Gtk.Box (
+                Orientation.VERTICAL,
+                0
+            );
 
             library_box.set_margin_top (12);
             library_box.set_margin_bottom (12);
             library_box.set_margin_start (12);
             library_box.set_margin_end (12);
+
             browser_controller.mount (library_box);
 
             view_stack.add_titled_with_icon (
@@ -168,16 +188,16 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            var playlist_box =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    0
-                );
+            var playlist_box = new Gtk.Box (
+                Orientation.VERTICAL,
+                0
+            );
 
             playlist_box.set_margin_top (12);
             playlist_box.set_margin_bottom (12);
             playlist_box.set_margin_start (12);
             playlist_box.set_margin_end (12);
+
             playlist_controller.mount (playlist_box);
 
             view_stack.add_titled_with_icon (
@@ -195,12 +215,16 @@ namespace Vesper.App.Windows {
              * Keep Settings constrained on large displays.
              */
 
-            Gtk.Box settings_box = new Gtk.Box (Orientation.VERTICAL, 0);
+            Gtk.Box settings_box = new Gtk.Box (
+                Orientation.VERTICAL,
+                0
+            );
 
             settings_box.set_margin_top (12);
             settings_box.set_margin_bottom (12);
             settings_box.set_margin_start (12);
             settings_box.set_margin_end (12);
+
             settings_controller.mount (settings_box);
 
             Adw.Clamp settings_clamp = new Adw.Clamp ();
@@ -246,19 +270,31 @@ namespace Vesper.App.Windows {
 
             /*
              * ---------------------------------------------------------
+             * Library Sync Indicator
+             * ---------------------------------------------------------
+             *
+             * Thin, indeterminate activity bar below the header.
+             * It remains hidden until a library sync starts.
+             */
+
+            sync_progress_bar = new Gtk.ProgressBar ();
+            sync_progress_bar.set_size_request (-1, 3);
+            sync_progress_bar.set_show_text (false);
+            sync_progress_bar.set_valign (Gtk.Align.START);
+            sync_progress_bar.set_visible (false);
+
+            /*
+             * ---------------------------------------------------------
              * Player
              * ---------------------------------------------------------
              */
 
-            player_box =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    0
-                );
-
-            player_controller.mount (
-                player_box
+            player_box = new Gtk.Box (
+                Orientation.VERTICAL,
+                0
             );
+
+            player_controller.mount (player_box);
 
             /*
              * ---------------------------------------------------------
@@ -266,22 +302,16 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            var content =
-                new Gtk.Box (
-                    Orientation.VERTICAL,
-                    0
-                );
+            var content = new Gtk.Box (
+                Orientation.VERTICAL,
+                0
+            );
 
             content.hexpand = true;
             content.vexpand = true;
 
-            content.append (
-                view_stack
-            );
-
-            content.append (
-                player_box
-            );
+            content.append (view_stack);
+            content.append (player_box);
 
             /*
              * ---------------------------------------------------------
@@ -289,20 +319,12 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            var toolbar_view =
-                new Adw.ToolbarView ();
+            var toolbar_view = new Adw.ToolbarView ();
 
-            toolbar_view.add_top_bar (
-                header_bar
-            );
-
-            toolbar_view.add_bottom_bar (
-                view_switcher_bar
-            );
-
-            toolbar_view.set_content (
-                content
-            );
+            toolbar_view.add_top_bar (header_bar);
+            toolbar_view.add_top_bar (sync_progress_bar);
+            toolbar_view.add_bottom_bar (view_switcher_bar);
+            toolbar_view.set_content (content);
 
             /*
              * ---------------------------------------------------------
@@ -310,16 +332,10 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            toast_overlay =
-                new Adw.ToastOverlay ();
+            toast_overlay = new Adw.ToastOverlay ();
+            toast_overlay.set_child (toolbar_view);
 
-            toast_overlay.set_child (
-                toolbar_view
-            );
-
-            set_content (
-                toast_overlay
-            );
+            set_content (toast_overlay);
 
             /*
              * ---------------------------------------------------------
@@ -329,23 +345,22 @@ namespace Vesper.App.Windows {
              * Desktop:
              *
              *   HeaderBar
+             *   Sync Indicator
              *       └── ViewSwitcher
              *
              * Mobile:
              *
              *   HeaderBar
-             *
+             *   Sync Indicator
              *   content
-             *
              *   ViewSwitcherBar
              */
 
-            var breakpoint =
-                new Adw.Breakpoint (
-                    Adw.BreakpointCondition.parse (
-                        "max-width: 600px"
-                    )
-                );
+            var breakpoint = new Adw.Breakpoint (
+                Adw.BreakpointCondition.parse (
+                    "max-width: 600px"
+                )
+            );
 
             breakpoint.add_setter (
                 view_switcher,
@@ -359,9 +374,7 @@ namespace Vesper.App.Windows {
                 true
             );
 
-            add_breakpoint (
-                breakpoint
-            );
+            add_breakpoint (breakpoint);
         }
 
         private void connect_signals () {
@@ -403,10 +416,21 @@ namespace Vesper.App.Windows {
                 on_next_requested
             );
 
-            player_controller.shuffle_requested.connect (enabled => { shuffle_enabled = enabled; });
-            player_controller.repeat_requested.connect (enabled => { repeat_enabled = enabled; });
+            player_controller.shuffle_requested.connect (
+                enabled => {
+                    shuffle_enabled = enabled;
+                }
+            );
 
-            player_controller.position_update.connect (now_playing_controller.update_lyrics);
+            player_controller.repeat_requested.connect (
+                enabled => {
+                    repeat_enabled = enabled;
+                }
+            );
+
+            player_controller.position_update.connect (
+                now_playing_controller.update_lyrics
+            );
 
             /*
              * ---------------------------------------------------------
@@ -425,7 +449,6 @@ namespace Vesper.App.Windows {
             ioc.library_service.library_refresh.connect (
                 () => {
                     browser_controller.load_artists ();
-
                     playlist_controller.load_playlists.begin ();
                 }
             );
@@ -448,9 +471,35 @@ namespace Vesper.App.Windows {
              * ---------------------------------------------------------
              */
 
-            close_request.connect (
-                on_close
-            );
+            close_request.connect (on_close);
+        }
+
+        /*
+         * -------------------------------------------------------------
+         * Library Sync Indicator
+         * -------------------------------------------------------------
+         */
+
+        private void start_sync_indicator () {
+            if (sync_pulse_source != 0) {
+                return;
+            }
+
+            sync_progress_bar.set_visible (true);
+
+            sync_pulse_source = Timeout.add (80, () => {
+                sync_progress_bar.pulse ();
+                return Source.CONTINUE;
+            });
+        }
+
+        private void stop_sync_indicator () {
+            if (sync_pulse_source != 0) {
+                Source.remove (sync_pulse_source);
+                sync_pulse_source = 0;
+            }
+
+            sync_progress_bar.set_visible (false);
         }
 
         /*
@@ -458,7 +507,7 @@ namespace Vesper.App.Windows {
          * Toast Notifications
          * -------------------------------------------------------------
          *
-         * Toasts are now reserved for things that actually require
+         * Toasts are reserved for things that actually require
          * the user's attention.
          *
          * Normal actions such as adding a song or connecting to the
@@ -466,23 +515,10 @@ namespace Vesper.App.Windows {
          * -------------------------------------------------------------
          */
 
-        private void show_error (
-            string message
-        ) {
-            var toast =
-                new Adw.Toast (
-                    message
-                );
-
-            /*
-             * Give errors a little longer to be read.
-             */
-            toast.timeout =
-                5;
-
-            toast_overlay.add_toast (
-                toast
-            );
+        private void show_error (string message) {
+            var toast = new Adw.Toast (message);
+            toast.timeout = 5;
+            toast_overlay.add_toast (toast);
         }
 
         /*
@@ -491,32 +527,36 @@ namespace Vesper.App.Windows {
          * -------------------------------------------------------------
          */
 
-        public void on_play_requested (
-            Song song
-        ) {
-            playlist.add_song (
-                song
-            );
+        public void on_play_requested (Song song) {
+            playlist.add_song (song);
 
             if (!player_controller.is_playing ()) {
-                start_new_song (
-                    song
-                );
+                start_new_song (song);
             }
-
         }
 
-        private void play_songs (Gee.List<Song> songs, bool shuffle) {
+        private void play_songs (
+            Gee.List<Song> songs,
+            bool shuffle
+        ) {
             playlist.clear ();
+
             foreach (Song song in songs) {
                 playlist.add_song (song);
             }
+
             if (shuffle) {
                 Song? song = playlist.get_random_song ();
-                if (song != null) start_new_song (song);
+
+                if (song != null) {
+                    start_new_song (song);
+                }
             } else {
                 Song? song = playlist.get_current_song ();
-                if (song != null) start_new_song (song);
+
+                if (song != null) {
+                    start_new_song (song);
+                }
             }
         }
 
@@ -524,20 +564,11 @@ namespace Vesper.App.Windows {
             Song? next_song = get_next_song_to_play ();
 
             if (next_song == null) {
-                /*
-                 * Nothing else to play.
-                 *
-                 * Stopping playback is enough feedback.
-                 */
-
                 player_controller.stop ();
-
                 return;
             }
 
-            start_new_song (
-                next_song
-            );
+            start_new_song (next_song);
         }
 
         private Song? get_next_song_to_play () {
@@ -553,57 +584,33 @@ namespace Vesper.App.Windows {
         }
 
         private void on_previous_requested () {
-            Song? previous_song =
-                shuffle_enabled ?
-                    playlist.get_random_song () :
-                    playlist.get_previous_song ();
+            Song? previous_song = shuffle_enabled
+                ? playlist.get_random_song ()
+                : playlist.get_previous_song ();
 
             if (previous_song == null) {
-                /*
-                 * There is simply no previous song.
-                 *
-                 * Don't interrupt the user with a notification.
-                 */
-
                 return;
             }
 
-            start_new_song (
-                previous_song
-            );
+            start_new_song (previous_song);
         }
 
         private void on_next_requested () {
-            Song? next_song =
-                shuffle_enabled ?
-                    playlist.get_random_song () :
-                    playlist.get_next_song ();
+            Song? next_song = shuffle_enabled
+                ? playlist.get_random_song ()
+                : playlist.get_next_song ();
 
             if (next_song == null) {
-                /*
-                 * There is simply no next song.
-                 */
-
                 return;
             }
 
-            start_new_song (
-                next_song
-            );
+            start_new_song (next_song);
         }
 
-        private void start_new_song (
-            Song song
-        ) {
+        private void start_new_song (Song song) {
             player_controller.stop ();
-
-            player_controller.play (
-                song
-            );
-
-            now_playing_controller.set_song (
-                song
-            );
+            player_controller.play (song);
+            now_playing_controller.set_song (song);
         }
 
         /*
@@ -611,22 +618,26 @@ namespace Vesper.App.Windows {
          * Navidrome Connection
          * -------------------------------------------------------------
          */
-        private void connect_to_navidrome () {
+
+        private async void sync_library () {
+            start_sync_indicator ();
+
             try {
-                ioc.library_service.sync.begin ();
+                yield ioc.library_service.sync ();
 
                 browser_controller.load_artists ();
-
                 playlist_controller.load_playlists.begin ();
             } catch (GLib.Error e) {
-                string message =
-                    "Unable to connect to Navidrome: " +
-                    e.message;
-
                 show_error (
-                    message
+                    "Unable to connect to Navidrome: " + e.message
                 );
+            } finally {
+                stop_sync_indicator ();
             }
+        }
+
+        private void connect_to_navidrome () {
+            sync_library.begin ();
         }
 
         /*
@@ -637,6 +648,11 @@ namespace Vesper.App.Windows {
 
         private bool on_close () {
             player_controller.stop ();
+
+            if (sync_pulse_source != 0) {
+                Source.remove (sync_pulse_source);
+                sync_pulse_source = 0;
+            }
 
             return false;
         }

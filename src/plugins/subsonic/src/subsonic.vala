@@ -73,6 +73,10 @@ namespace Vesper.Plugins.Subsonic {
             public async Gee.List<Artist> get_artists () {
                 var results = new ArrayList<Artist> ();
 
+                if (config.base_url == null || config.base_url == "") {
+                    return results;
+                }
+
                 string url = build_url ("getArtists");
 
                 Xml.Doc* doc = yield fetch_xml_async (url);
